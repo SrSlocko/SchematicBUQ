@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=SchematicBuq
+Comment=Buscador inteligente de esquemáticos
+Exec=schematicbuq
+Icon=schematicbuq
+Terminal=false
+Type=Application
+Categories=Electronics;Utility;Engineering;
+StartupWMClass=SchematicBuq

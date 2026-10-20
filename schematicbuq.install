@@ -1,0 +1,7 @@
+post_install() {
+    echo "SchematicBuq instalado. Ejecútalo con 'schematicbuq' o desde tu menú de aplicaciones."
+}
+
+post_upgrade() {
+    echo "SchematicBuq actualizado correctamente."
+}

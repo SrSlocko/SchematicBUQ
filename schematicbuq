@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import sys
+import os
+
+# Ruta del programa instalado
+pkg_dir = '/usr/share/schematicbuq'
+if os.path.isdir(pkg_dir):
+    sys.path.insert(0, pkg_dir)
+    os.chdir(pkg_dir)
+    from main import main
+    main()
+else:
+    # Fallback a desarrollo
+    sys.path.insert(0, os.path.expanduser('~/.local/share/schematicbuq'))
+    os.chdir(os.path.expanduser('~/.local/share/schematicbuq'))
+    from main import main
+    main()
