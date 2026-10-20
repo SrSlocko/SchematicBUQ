@@ -187,9 +187,11 @@ class SchematicSearchApp(QMainWindow):
         self.btn_share.setToolTip(translations.tr('share_tooltip'))
         self.btn_import_pkg = QPushButton(translations.tr('import_pkg'))
         self.btn_import_pkg.setToolTip(translations.tr('import_pkg_tooltip'))
+        self.btn_reset = QPushButton(translations.tr('reset'))
+        self.btn_reset.setToolTip(translations.tr('reset_tooltip'))
         for b in (self.btn_add_files, self.btn_add_folder, self.btn_add_url,
                   self.btn_new_device, self.btn_assign_device, self.btn_share,
-                  self.btn_import_pkg, self.btn_help,
+                  self.btn_import_pkg, self.btn_help, self.btn_reset,
                   self.btn_clear):
             actions.addWidget(b)
         actions.addStretch()
@@ -328,6 +330,7 @@ class SchematicSearchApp(QMainWindow):
         self.btn_assign_device.clicked.connect(self.assign_device_folder)
         self.btn_share.clicked.connect(self.share_schematics)
         self.btn_import_pkg.clicked.connect(self.import_package)
+        self.btn_reset.clicked.connect(self.reset_all_data)
         self.btn_open_device.clicked.connect(self.open_device_folder)
         self.btn_clear.clicked.connect(self.clear_all)
         self.btn_help.clicked.connect(self.show_help)
@@ -710,7 +713,32 @@ class SchematicSearchApp(QMainWindow):
         self.lbl_files.setText(f"{n} esquemático(s)")
 
     def clear_all(self):
-        self._reset_workspace("Todo limpio")
+        self._reset_workspace(translations.tr('cleared'))
+
+    # ---------------- Restablecer / primer uso ----------------
+    def reset_all_data(self):
+        """Borra TODOS los datos locales (aparatos, caché, esquemáticos)."""
+        resp = QMessageBox.question(
+            self, translations.tr('reset_title'),
+            translations.tr('reset_confirm'),
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if resp != QMessageBox.Yes:
+            return
+        from utils import reset as reset_mod
+        errors = reset_mod.reset_user_data()
+        # Reinicia el estado en memoria
+        self.paths = []
+        self.current_device = ""
+        self.index.clear()
+        self.table.setRowCount(0)
+        self.device_db = DeviceDB()
+        self.config.last_device = ""
+        self.config.save()
+        self.reload_devices()
+        self._reset_workspace(translations.tr('reset_done'))
+        if errors:
+            QMessageBox.warning(self, translations.tr('error'),
+                                "\n".join(errors))
 
     # ---------------- Indexado ----------------
     def start_indexing(self, auto=False):

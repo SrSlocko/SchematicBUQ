@@ -97,6 +97,12 @@ ES = {
     'import_failed': 'No se pudo importar: {err}',
     'import_done': 'Se importaron {n} esquemático(s) a tu almacén local.',
     'import_skipped': 'Se omitieron {n} archivo(s) por seguridad (no son esquemáticos).',
+    'cleared': 'Todo limpio',
+    'reset': '♻️  Restablecer',
+    'reset_tooltip': 'Borra todos los datos locales (aparatos, esquemáticos y caché) y deja el programa como recién instalado.',
+    'reset_title': 'Restablecer el programa',
+    'reset_confirm': 'Se borrarán TODOS los datos locales: aparatos registrados, esquemáticos guardados y caché.\n\nEsta acción no se puede deshacer. ¿Continuar?',
+    'reset_done': 'Datos restablecidos. El programa está como recién instalado.',
 }
 
 # English
@@ -186,6 +192,12 @@ EN = {
     'import_failed': 'Could not import: {err}',
     'import_done': 'Imported {n} schematic(s) into your local store.',
     'import_skipped': 'Skipped {n} file(s) for safety (not schematics).',
+    'cleared': 'All clear',
+    'reset': '♻️  Reset',
+    'reset_tooltip': 'Deletes all local data (devices, schematics and cache) and leaves the program freshly installed.',
+    'reset_title': 'Reset the program',
+    'reset_confirm': 'ALL local data will be deleted: registered devices, saved schematics and cache.\n\nThis cannot be undone. Continue?',
+    'reset_done': 'Data reset. The program is now freshly installed.',
 }
 
 # Russian
@@ -275,6 +287,12 @@ RU = {
     'import_failed': 'Не удалось импортировать: {err}',
     'import_done': 'Импортировано {n} схема(ы) в локальное хранилище.',
     'import_skipped': 'Пропущено {n} файл(ов) для безопасности (не схемы).',
+    'cleared': 'Всё очищено',
+    'reset': '♻️  Сброс',
+    'reset_tooltip': 'Удаляет все локальные данные (устройства, схемы и кэш) и возвращает программу в исходное состояние.',
+    'reset_title': 'Сброс программы',
+    'reset_confirm': 'Будут удалены ВСЕ локальные данные: устройства, сохранённые схемы и кэш.\n\nЭто нельзя отменить. Продолжить?',
+    'reset_done': 'Данные сброшены. Программа как после установки.',
 }
 
 TRANSLATIONS = {
