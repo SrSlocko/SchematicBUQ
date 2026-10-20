@@ -26,3 +26,17 @@ def mark_done(name: str) -> None:
             f.write("ok\n")
     except Exception:
         pass
+
+
+def is_first_run() -> bool:
+    """¿Es la primera vez que se ejecuta el programa en este equipo?
+
+    Se considera primer arranque si todavía no existe la marca
+    ``first_run_done``. Sirve para mostrar un mensaje de bienvenida e
+    informar al usuario de dónde se guardan sus datos.
+    """
+    return not marker_exists("first_run_done")
+
+
+def mark_first_run_done() -> None:
+    mark_done("first_run_done")

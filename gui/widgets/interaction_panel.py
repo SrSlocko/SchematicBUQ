@@ -58,7 +58,7 @@ class InteractionMap(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setMinimumHeight(250)
+        self.setMinimumHeight(160)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setMouseTracking(True)
         self._center = None          # dict
@@ -224,32 +224,37 @@ class InteractionPanel(QWidget):
         root.setSpacing(6)
 
         head = QHBoxLayout()
-        title = QLabel("🔄  Interacción y comportamiento")
+        head.setSpacing(4)
+        title = QLabel("🔄  Interacción")
         f = QFont(); f.setBold(True); f.setPointSize(11)
         title.setFont(f)
         head.addWidget(title)
         head.addStretch(1)
 
-        self.btn_back = QPushButton("◀ Volver")
-        self.btn_back.setToolTip("Regresa al componente que estabas viendo antes")
+        self.btn_back = QPushButton("◀")
+        self.btn_back.setToolTip("Volver al componente anterior")
         self.btn_back.clicked.connect(self.back_requested.emit)
         head.addWidget(self.btn_back)
 
-        self.btn_view = QPushButton("🎯 Ver en el esquemático")
+        self.btn_view = QPushButton("🎯")
+        self.btn_view.setToolTip("Ver en el esquemático")
         self.btn_view.clicked.connect(lambda: self.open_requested.emit(self._designator))
         head.addWidget(self.btn_view)
 
-        self.btn_multi = QPushButton("🔌 Multímetro")
+        self.btn_multi = QPushButton("🔌")
+        self.btn_multi.setToolTip("Ir al Multímetro")
         self.btn_multi.clicked.connect(lambda: self.tab_requested.emit("multimetro"))
         head.addWidget(self.btn_multi)
 
-        self.btn_diag = QPushButton("🔬 Diagnóstico")
+        self.btn_diag = QPushButton("🔬")
+        self.btn_diag.setToolTip("Ir al Diagnóstico")
         self.btn_diag.clicked.connect(lambda: self.tab_requested.emit("diagnostico"))
         head.addWidget(self.btn_diag)
         root.addLayout(head)
 
         self.lbl_component = QLabel("Componente: —")
         self.lbl_component.setStyleSheet("color:#9fb0c6; font-size:13px;")
+        self.lbl_component.setWordWrap(True)
         root.addWidget(self.lbl_component)
 
         self.map = InteractionMap()

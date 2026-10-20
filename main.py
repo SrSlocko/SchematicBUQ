@@ -61,11 +61,9 @@ def _install_excepthook():
         try:
             detalle = f"\n\nSe guardó el detalle en:\n{path}" if path else ""
             QMessageBox.critical(
-                None, "Error inesperado",
-                "Ocurrió un error inesperado, pero la aplicación sigue abierta.\n\n"
-                f"{exc_type.__name__}: {exc}\n\n"
-                "Puedes seguir usándola. Si el fallo se repite, prueba a reanalizar "
-                f"los esquemáticos.{detalle}")
+                None, translations.tr('unexpected_error_title'),
+                translations.tr('unexpected_error_body',
+                                kind=exc_type.__name__, err=exc, detalle=detalle))
         except Exception:
             pass
 
@@ -77,8 +75,26 @@ def main():
     _install_excepthook()
     app = QApplication(sys.argv)
     app.setApplicationName("SchematicBuq")
-    app.setApplicationVersion("1.1.0")
+    app.setApplicationVersion(paths.APP_VERSION)
     app.setOrganizationName("SchematicBuq")
+    # Icono a nivel de aplicación: la barra de tareas y los diálogos lo usan
+    # aunque la ventana principal aún no exista.
+    try:
+        from PyQt5.QtGui import QIcon
+        icon = QIcon()
+        for p in (paths.ICON_PNG, paths.ICON_ICO):
+            if p and os.path.exists(p):
+                icon.addFile(p)
+        if not icon.isNull():
+            app.setWindowIcon(icon)
+    except Exception:
+        pass
+    # Nombre de clase de ventana (necesario para asociar el icono del .desktop
+    # en Linux, StartupWMClass=SchematicBuq).
+    try:
+        app.setDesktopFileName("schematicbuq")
+    except Exception:
+        pass
     window = SchematicSearchApp()
     window.show()
     sys.exit(app.exec_())

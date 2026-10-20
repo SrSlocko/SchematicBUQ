@@ -64,7 +64,19 @@ class ComponentView(QWidget):
 
     # ---------------- UI ----------------
     def init_ui(self):
-        root = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        # Contenido desplazable: en pantallas bajas el panel se recorta sin
+        # scroll y quedaban secciones ocultas.
+        from PyQt5.QtWidgets import QScrollArea
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+        holder = QWidget()
+        scroll.setWidget(holder)
+        outer.addWidget(scroll)
+
+        root = QVBoxLayout(holder)
         root.setContentsMargins(10, 10, 10, 10)
         root.setSpacing(8)
 
@@ -82,7 +94,8 @@ class ComponentView(QWidget):
         sb = QVBoxLayout(self.symbol_box)
         self.lbl_symbol = QLabel()
         self.lbl_symbol.setAlignment(Qt.AlignCenter)
-        self.lbl_symbol.setMinimumHeight(230)
+        self.lbl_symbol.setMinimumHeight(150)
+        self.lbl_symbol.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         sb.addWidget(self.lbl_symbol)
         root.addWidget(self.symbol_box)
 
@@ -143,7 +156,8 @@ class ComponentView(QWidget):
         # Foto real
         self.lbl_photo = QLabel()
         self.lbl_photo.setAlignment(Qt.AlignCenter)
-        self.lbl_photo.setMinimumHeight(180)
+        self.lbl_photo.setMinimumHeight(120)
+        self.lbl_photo.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.lbl_photo.setStyleSheet(
             "QLabel{background:#171b22;border:1px dashed #3a465a;border-radius:8px;color:#7b8798;}")
         self.lbl_photo.setText("Pulsa «Ver foto real» para buscar una imagen")

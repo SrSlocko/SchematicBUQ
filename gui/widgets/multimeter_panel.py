@@ -141,6 +141,13 @@ class MultimeterPanel(QWidget):
             self.row_btns.removeWidget(b)
             b.deleteLater()
         self._buttons = []
+        # Elimina también los spacers añadidos por _build_buttons: si no, se
+        # acumulan en cada reconstrucción y deforman la fila de botones.
+        while self.row_btns.count():
+            item = self.row_btns.takeAt(0)
+            w = item.widget()
+            if w is not None and w not in self._buttons:
+                w.deleteLater()
 
     def show_component(self, designator, value="", type_name=""):
         self._designator = (designator or "").upper()

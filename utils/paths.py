@@ -15,6 +15,9 @@ import sys
 # ``utils/paths.py`` -> raíz del paquete instalado.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Versión de la aplicación (única fuente de verdad).
+APP_VERSION = "1.2.0"
+
 
 def _base_home() -> str:
     """Carpeta raíz de datos del usuario (respetando SCHEMATICBUQ_HOME)."""
@@ -55,7 +58,31 @@ INDEX_FILE = os.path.join(DATA_HOME, "index.json")
 RESOURCES_DIR = os.path.join(BASE_DIR, "resources")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 NOMENCLATURE_FILE = os.path.join(DATA_DIR, "nomenclature_es.json")
-ICON_FILE = os.path.join(RESOURCES_DIR, "icons", "app.ico")
+
+ICONS_DIR = os.path.join(RESOURCES_DIR, "icons")
+ICON_ICO = os.path.join(ICONS_DIR, "app.ico")
+ICON_PNG = os.path.join(ICONS_DIR, "app.png")
+
+
+def best_icon_file() -> str:
+    """Devuelve el archivo de icono más adecuado para el sistema.
+
+    En Windows se prefiere ``.ico`` (multirresolución); en Linux/macOS se usa
+    ``.png`` porque Qt5 no siempre trae el complemento para leer ``.ico`` y,
+    cuando lo lee, suele verse pixelado al escalarlo.
+    """
+    if sys.platform.startswith("win"):
+        order = (ICON_ICO, ICON_PNG)
+    else:
+        order = (ICON_PNG, ICON_ICO)
+    for p in order:
+        if os.path.exists(p):
+            return p
+    return ""
+
+
+# Compatibilidad: nombre histórico usado por el resto del código.
+ICON_FILE = best_icon_file() or ICON_ICO
 
 
 def ensure_user_dirs() -> None:

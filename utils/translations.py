@@ -103,6 +103,25 @@ ES = {
     'reset_title': 'Restablecer el programa',
     'reset_confirm': 'Se borrarán TODOS los datos locales: aparatos registrados, esquemáticos guardados y caché.\n\nEsta acción no se puede deshacer. ¿Continuar?',
     'reset_done': 'Datos restablecidos. El programa está como recién instalado.',
+    # --- Adaptación de pantalla / primer arranque ---
+    'more_actions': 'Más acciones',
+    'unexpected_error_title': 'Error inesperado',
+    'unexpected_error_body': ('Ocurrió un error inesperado, pero la aplicación sigue abierta.\n\n'
+                              '{kind}: {err}\n\n'
+                              'Puedes seguir usándola. Si el fallo se repite, prueba a reanalizar '
+                              'los esquemáticos.{detalle}'),
+    'first_run_title': '¡Bienvenido a SchematicBuq!',
+    'first_run_msg': 'El programa se ha instalado limpio: no hay aparatos ni esquemáticos previos.\n\nTodos tus datos se guardarán en:\n{home}\n\nPuedes añadir esquemáticos con «Añadir archivos» o «Añadir carpeta».',
+    'add_files_tooltip': 'Añade uno o varios esquemáticos (PDF, imagen, netlist)',
+    'add_folder_tooltip': 'Añade todos los esquemáticos de una carpeta',
+    'add_url_tooltip': 'Descarga un PDF desde un enlace de internet',
+    'new_device_tooltip': 'Crea un aparato y guarda sus esquemáticos en su carpeta',
+    'assign_device_tooltip': 'Guarda los archivos en la carpeta del aparato activo',
+    'help_tooltip': 'Guía paso a paso y diccionario para principiantes',
+    'clear_tooltip': 'Vacía la lista de archivos, los resultados y el visor',
+    'ocr_tooltip': ('Detecta los componentes aunque el PDF sea una foto/escaneo sin texto.\n'
+                    'Déjalo activado. Desactívalo solo si tus PDF ya tienen texto y\n'
+                    'quieres analizar mucho más rápido.'),
 }
 
 # English
@@ -198,6 +217,25 @@ EN = {
     'reset_title': 'Reset the program',
     'reset_confirm': 'ALL local data will be deleted: registered devices, saved schematics and cache.\n\nThis cannot be undone. Continue?',
     'reset_done': 'Data reset. The program is now freshly installed.',
+    # --- Screen adaptation / first run ---
+    'more_actions': 'More actions',
+    'unexpected_error_title': 'Unexpected error',
+    'unexpected_error_body': ('An unexpected error occurred, but the application is still open.\n\n'
+                              '{kind}: {err}\n\n'
+                              'You can keep using it. If the failure repeats, try re-analyzing '
+                              'the schematics.{detalle}'),
+    'first_run_title': 'Welcome to SchematicBuq!',
+    'first_run_msg': 'The program was installed clean: there are no previous devices or schematics.\n\nAll your data will be stored in:\n{home}\n\nYou can add schematics with "Add files" or "Add folder".',
+    'add_files_tooltip': 'Add one or more schematics (PDF, image, netlist)',
+    'add_folder_tooltip': 'Add all schematics from a folder',
+    'add_url_tooltip': 'Download a PDF from an internet link',
+    'new_device_tooltip': 'Create a device and store its schematics in its folder',
+    'assign_device_tooltip': 'Save the files into the active device folder',
+    'help_tooltip': 'Step-by-step guide and dictionary for beginners',
+    'clear_tooltip': 'Clears the file list, results and viewer',
+    'ocr_tooltip': ('Detects components even when the PDF is a scan/photo without text.\n'
+                    'Keep it on. Turn it off only if your PDFs already have text and\n'
+                    'you want much faster analysis.'),
 }
 
 # Russian
@@ -293,6 +331,25 @@ RU = {
     'reset_title': 'Сброс программы',
     'reset_confirm': 'Будут удалены ВСЕ локальные данные: устройства, сохранённые схемы и кэш.\n\nЭто нельзя отменить. Продолжить?',
     'reset_done': 'Данные сброшены. Программа как после установки.',
+    # --- Адаптация к экрану / первый запуск ---
+    'more_actions': 'Ещё действия',
+    'unexpected_error_title': 'Непредвиденная ошибка',
+    'unexpected_error_body': ('Произошла непредвиденная ошибка, но приложение продолжает работать.\n\n'
+                              '{kind}: {err}\n\n'
+                              'Можно продолжать работу. Если ошибка повторится, попробуйте '
+                              'переиндексировать схемы.{detalle}'),
+    'first_run_title': 'Добро пожаловать в SchematicBuq!',
+    'first_run_msg': 'Программа установлена с чистого листа: предыдущих устройств и схем нет.\n\nВсе ваши данные будут сохраняться в:\n{home}\n\nДобавляйте схемы кнопками «Добавить файлы» или «Добавить папку».',
+    'add_files_tooltip': 'Добавить одну или несколько схем (PDF, изображение, нетлист)',
+    'add_folder_tooltip': 'Добавить все схемы из папки',
+    'add_url_tooltip': 'Скачать PDF по ссылке из интернета',
+    'new_device_tooltip': 'Создать устройство и хранить его схемы в отдельной папке',
+    'assign_device_tooltip': 'Сохранить файлы в папку активного устройства',
+    'help_tooltip': 'Пошаговое руководство и словарь для начинающих',
+    'clear_tooltip': 'Очистить список файлов, результаты и просмотрщик',
+    'ocr_tooltip': ('Распознаёт компоненты, даже если PDF — скан/фото без текста.\n'
+                    'Оставьте включённым. Отключайте только если в PDF уже есть текст\n'
+                    'и нужна гораздо более быстрая обработка.'),
 }
 
 TRANSLATIONS = {

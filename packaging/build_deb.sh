@@ -26,11 +26,14 @@ tar --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' \
 # Lanzador
 install -Dm755 schematicbuq "$ROOT/usr/bin/schematicbuq"
 
-# Icono
+# Icono (hicolor 256x256 + pixmaps como respaldo)
+mkdir -p "$ROOT/usr/share/icons/hicolor/256x256/apps"
 if [ -f resources/icons/app.png ]; then
+  cp resources/icons/app.png "$ROOT/usr/share/icons/hicolor/256x256/apps/schematicbuq.png"
   cp resources/icons/app.png "$ROOT/usr/share/pixmaps/schematicbuq.png"
 elif [ -f resources/icons/app.ico ]; then
   convert resources/icons/app.ico "$ROOT/usr/share/pixmaps/schematicbuq.png" 2>/dev/null || true
+  cp "$ROOT/usr/share/pixmaps/schematicbuq.png" "$ROOT/usr/share/icons/hicolor/256x256/apps/schematicbuq.png" 2>/dev/null || true
 fi
 
 # .desktop

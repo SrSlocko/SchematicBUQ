@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QListWidget, QListWidgetItem,
-    QGroupBox, QTextEdit
+    QGroupBox, QTextEdit, QScrollArea
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
@@ -20,7 +20,18 @@ class ConnectionsPanel(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        # Contenido desplazable: en pantallas bajas las tres secciones no caben
+        # y quedaban ocultas sin forma de acceder a ellas.
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+        holder = QWidget()
+        scroll.setWidget(holder)
+        outer.addWidget(scroll)
+        layout = QVBoxLayout(holder)
+        layout.setContentsMargins(6, 6, 6, 6)
 
         title = QLabel("🔗 Seguimiento de la red del esquemático")
         f = QFont(); f.setBold(True); f.setPointSize(10)
@@ -28,6 +39,7 @@ class ConnectionsPanel(QWidget):
         layout.addWidget(title)
 
         self.lbl_current = QLabel("Componente: -")
+        self.lbl_current.setWordWrap(True)
         layout.addWidget(self.lbl_current)
 
         grp_nets = QGroupBox("Nodos / Nets a los que pertenece")
@@ -40,6 +52,7 @@ class ConnectionsPanel(QWidget):
         grp_conn = QGroupBox("Componentes conectados (clic para seguir la línea)")
         l2 = QVBoxLayout(grp_conn)
         self.list_conn = QListWidget()
+        self.list_conn.setMinimumHeight(110)
         self.list_conn.itemDoubleClicked.connect(self._on_item)
         l2.addWidget(self.list_conn)
         layout.addWidget(grp_conn)
@@ -48,8 +61,11 @@ class ConnectionsPanel(QWidget):
         l3 = QVBoxLayout(grp_note)
         self.txt = QTextEdit()
         self.txt.setReadOnly(True)
+        self.txt.setMinimumHeight(90)
         l3.addWidget(self.txt)
         layout.addWidget(grp_note)
+        layout.addStretch(1)
+
 
     def _on_item(self, item):
         self.component_clicked.emit(item.text())

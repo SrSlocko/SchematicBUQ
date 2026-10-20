@@ -2,17 +2,18 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-import shutil
+import subprocess
 
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit,
     QLabel, QTableWidget, QTableWidgetItem, QFileDialog, QProgressBar,
     QStatusBar, QMessageBox, QHeaderView, QSplitter, QTabWidget, QInputDialog,
     QComboBox, QFrame, QTextEdit, QGroupBox, QListWidget, QListWidgetItem,
-    QCheckBox
+    QCheckBox, QScrollArea, QMenu, QToolButton, QSizePolicy, QApplication,
+    QDialog
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QIcon, QFont
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize, QTimer
+from PyQt5.QtGui import QIcon, QFont, QPixmap
 
 from utils.search_index import SearchIndex
 from utils.file_loader import FileLoader, SUPPORTED_EXTS
@@ -31,12 +32,41 @@ from gui.widgets.help_panel import HelpPanel
 from utils import translations
 from utils.schematic_store import SchematicStore
 from utils import paths
+from utils import migration
 
 import qdarkstyle
 
 BASE_DIR = paths.BASE_DIR
 ICON_PATH = paths.ICON_FILE
 SCHEMATICS_DIR = paths.SCHEMATICS_DIR
+
+
+def _app_icon() -> QIcon:
+    """Icono de la aplicación (png preferido; si no, ico). Nunca vacío."""
+    icon = QIcon()
+    for p in (paths.ICON_PNG, paths.ICON_ICO):
+        if p and os.path.exists(p):
+            icon.addFile(p)
+    return icon
+
+
+def load_qdarkstyle() -> str:
+    """Carga la hoja de estilo de qdarkstyle de forma compatible.
+
+    qdarkstyle cambió de API entre versiones (``load_stylesheet_pyqt5`` quedó
+    obsoleta). Se prueban las variantes por orden y, si ninguna existe, se
+    devuelve una hoja vacía en lugar de romper el arranque.
+    """
+    try:
+        if hasattr(qdarkstyle, "load_stylesheet"):
+            return qdarkstyle.load_stylesheet(pyside=False)
+    except Exception:
+        pass
+    try:
+        return qdarkstyle.load_stylesheet_pyqt5()
+    except Exception:
+        pass
+    return ""
 
 
 def _norm_path(p):
@@ -80,14 +110,7 @@ class SchematicSearchApp(QMainWindow):
         super().__init__()
         translations.set_language()
         self.setWindowTitle(translations.tr('app_title'))
-        self.setGeometry(50, 40, 1440, 860)
-        # Make responsive - adapt to screen size
-        from PyQt5.QtWidgets import QDesktopWidget
-        screen = QDesktopWidget().screenGeometry()
-        if screen.width() < 1600 or screen.height() < 900:
-            self.setGeometry(20, 20, min(1200, screen.width()-40), min(700, screen.height()-80))
-        if os.path.exists(ICON_PATH):
-            self.setWindowIcon(QIcon(ICON_PATH))
+        self.setWindowIcon(_app_icon())
 
         self.index = SearchIndex()
         self.config = Config()
@@ -101,13 +124,95 @@ class SchematicSearchApp(QMainWindow):
         self._pending_search = None
         self._restart_index = False
         self._nav_history = []         # componentes visitados (para «Volver»)
+        self._compact = False          # modo compacto para pantallas pequeñas
+        self._ui_ready = False         # evita que resizeEvent actúe antes de tiempo
 
         paths.ensure_user_dirs()
         os.makedirs(SCHEMATICS_DIR, exist_ok=True)
         self.setStyleSheet(self._stylesheet())
         self.init_ui()
+        self._ui_ready = True
+        self._apply_adaptive_layout()
         self.reload_devices()
         self._show_system_status()
+        # Aviso de instalación limpia (una sola vez por equipo).
+        QTimer.singleShot(300, self._maybe_first_run_message)
+
+    # ---------------- Adaptación a la pantalla ----------------
+    @staticmethod
+    def _screen_geometry():
+        """Geometría útil de la pantalla (descontando barras/dock)."""
+        screen = QApplication.primaryScreen()
+        if screen is None:
+            from PyQt5.QtWidgets import QDesktopWidget
+            return QDesktopWidget().availableGeometry()
+        return screen.availableGeometry()
+
+    def _set_compact(self, compact: bool):
+        """Aplica el modo compacto de forma idempotente.
+
+        En modo compacto las acciones secundarias (compartir/importar/
+        restablecer) se esconden en un menú «⋯ Más» para que la barra de
+        botones quepa en pantallas estrechas.
+        """
+        compact = bool(compact)
+        changed = compact != self._compact
+        self._compact = compact
+        if not self._ui_ready:
+            return
+        # Solo toca la interfaz si el estado cambió: así el redimensionado no
+        # repinta la hoja de estilo en cada píxel (importante en PCs modestos).
+        if changed:
+            for b in (self.btn_share, self.btn_import_pkg, self.btn_reset):
+                b.setVisible(not compact)
+            self.btn_more.setVisible(compact)
+            self.setStyleSheet(self._stylesheet())
+
+    def _apply_adaptive_layout(self):
+        """Ajusta tamaño, modo compacto y splitter según la pantalla actual."""
+        geo = self._screen_geometry()
+        sw, sh = geo.width(), geo.height()
+
+        # Tamaño objetivo: 1280x820 como máximo, encogido a la pantalla real.
+        max_w, max_h = max(640, sw - 30), max(480, sh - 70)
+        target_w = max(640, min(1280, max_w))
+        target_h = max(480, min(820, max_h))
+        x = geo.x() + max(0, (sw - target_w) // 2)
+        y = geo.y() + max(0, (sh - target_h) // 3)
+        self.setGeometry(x, y, target_w, target_h)
+
+        # Mínimos realistas: la ventana puede encogerse sin desbordar porque
+        # los paneles ahora tienen scroll.
+        self.setMinimumSize(min(680, target_w), min(480, target_h))
+
+        self._set_compact(sw < 1366 or sh < 768)
+
+        # Reparto inicial del splitter (damos algo más al panel de pestañas).
+        try:
+            self.splitter.setSizes([int(target_w * 0.44), int(target_w * 0.56)])
+        except Exception:
+            pass
+
+    def resizeEvent(self, event):
+        """Reacciona a cambios de tamaño de la ventana (redimensionado)."""
+        super().resizeEvent(event)
+        if not self._ui_ready:
+            return
+        # Al encoger la ventana por debajo de ese ancho/alto, activamos el modo
+        # compacto para que los botones no se salgan de la pantalla.
+        self._set_compact(self.width() < 1100 or self.height() < 640)
+
+    def _maybe_first_run_message(self):
+        """Muestra un aviso de instalación limpia la primera vez."""
+        if not migration.is_first_run():
+            return
+        migration.mark_first_run_done()
+        try:
+            QMessageBox.information(
+                self, translations.tr('first_run_title'),
+                translations.tr('first_run_msg', home=paths.DATA_HOME))
+        except Exception:
+            pass
 
     def _show_system_status(self):
         ocr = self.config.ocr_available()
@@ -119,18 +224,20 @@ class SchematicSearchApp(QMainWindow):
 
     # ---------------- Estilo ----------------
     def _stylesheet(self):
-        base = qdarkstyle.load_stylesheet_pyqt5()
+        base = load_qdarkstyle()
+        compact = self._compact if hasattr(self, '_compact') else False
+        pad = "5px 9px" if compact else "7px 12px"
         extra = """
         QPushButton {
-            padding: 7px 12px; border-radius: 6px; font-weight: 600;
+            padding: %s; border-radius: 6px; font-weight: 600;
         }
         QPushButton:hover { background-color: #2d6cdf; }
         QLineEdit {
-            padding: 8px 10px; border-radius: 6px; font-size: 14px;
+            padding: %s; border-radius: 6px; font-size: 14px;
         }
         QTableWidget { gridline-color: #2a2f3a; }
         QHeaderView::section {
-            padding: 6px; font-weight: 700; background-color: #232a36;
+            padding: 4px; font-weight: 700; background-color: #232a36;
             border: none; border-right: 1px solid #2a2f3a;
         }
         QGroupBox {
@@ -138,8 +245,10 @@ class SchematicSearchApp(QMainWindow):
             margin-top: 12px; padding-top: 8px;
         }
         QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 4px; }
-        """
+        QTabWidget::pane { border: 1px solid #2f3a4c; }
+        """ % (pad, "6px 9px" if compact else "8px 10px")
         return base + extra
+
 
     # ---------------- UI ----------------
     def init_ui(self):
@@ -147,39 +256,43 @@ class SchematicSearchApp(QMainWindow):
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
         root.setContentsMargins(10, 10, 10, 6)
+        root.setSpacing(6)
 
         # --- Barra de título propia ---
         header = QHBoxLayout()
         logo = QLabel()
-        if os.path.exists(ICON_PATH):
-            logo.setPixmap(QIcon(ICON_PATH).pixmap(42, 42))
+        icon = _app_icon()
+        if not icon.isNull():
+            logo.setPixmap(icon.pixmap(40, 40))
         title = QLabel("SchematicBuq")
         tf = QFont(); tf.setPointSize(17); tf.setBold(True)
         title.setFont(tf)
-        subtitle = QLabel(translations.tr('subtitle'))
-        subtitle.setStyleSheet("color:#8fa3bf; font-size:12px;")
+        self.lbl_subtitle = QLabel(translations.tr('subtitle'))
+        self.lbl_subtitle.setStyleSheet("color:#8fa3bf; font-size:12px;")
+        self.lbl_subtitle.setWordWrap(True)
         header.addWidget(logo)
         header.addWidget(title)
-        header.addWidget(subtitle)
+        header.addWidget(self.lbl_subtitle)
         header.addStretch()
         root.addLayout(header)
 
-        # --- Barra de acciones ---
+        # --- Barra de acciones (responsive) ---
         actions = QHBoxLayout()
+        actions.setSpacing(6)
         self.btn_add_files = QPushButton(translations.tr('add_files'))
-        self.btn_add_files.setToolTip("Añade uno o varios esquemáticos (PDF, imagen, netlist)")
+        self.btn_add_files.setToolTip(translations.tr('add_files_tooltip'))
         self.btn_add_folder = QPushButton(translations.tr('add_folder'))
-        self.btn_add_folder.setToolTip("Añade todos los esquemáticos de una carpeta")
+        self.btn_add_folder.setToolTip(translations.tr('add_folder_tooltip'))
         self.btn_add_url = QPushButton(translations.tr('add_url'))
-        self.btn_add_url.setToolTip("Descarga un PDF desde un enlace de internet")
+        self.btn_add_url.setToolTip(translations.tr('add_url_tooltip'))
         self.btn_new_device = QPushButton(translations.tr('new_device'))
-        self.btn_new_device.setToolTip("Crea un aparato y guarda sus esquemáticos en su carpeta")
+        self.btn_new_device.setToolTip(translations.tr('new_device_tooltip'))
         self.btn_assign_device = QPushButton(translations.tr('assign_device'))
-        self.btn_assign_device.setToolTip("Guarda los archivos en la carpeta del aparato activo")
+        self.btn_assign_device.setToolTip(translations.tr('assign_device_tooltip'))
         self.btn_help = QPushButton(translations.tr('help'))
-        self.btn_help.setToolTip("Guía paso a paso y diccionario para principiantes")
+        self.btn_help.setToolTip(translations.tr('help_tooltip'))
         self.btn_clear = QPushButton(translations.tr('clear'))
-        self.btn_clear.setToolTip("Vacía la lista de archivos, los resultados y el visor")
+        self.btn_clear.setToolTip(translations.tr('clear_tooltip'))
         self.btn_index = QPushButton(translations.tr('analyze'))
         self.btn_index.setToolTip(translations.tr('analyze_tooltip'))
         self.btn_index.setStyleSheet("background-color:#2563eb;color:white;")
@@ -189,10 +302,24 @@ class SchematicSearchApp(QMainWindow):
         self.btn_import_pkg.setToolTip(translations.tr('import_pkg_tooltip'))
         self.btn_reset = QPushButton(translations.tr('reset'))
         self.btn_reset.setToolTip(translations.tr('reset_tooltip'))
+
+        # Botón "⋯ Más" que agrupa acciones secundarias en pantallas pequeñas.
+        self.btn_more = QToolButton()
+        self.btn_more.setText("⋯")
+        self.btn_more.setToolTip(translations.tr('more_actions'))
+        self.btn_more.setPopupMode(QToolButton.InstantPopup)
+        self.menu_more = QMenu(self.btn_more)
+        self.act_more_share = self.menu_more.addAction(translations.tr('share'))
+        self.act_more_import = self.menu_more.addAction(translations.tr('import_pkg'))
+        self.act_more_reset = self.menu_more.addAction(translations.tr('reset'))
+        self.btn_more.setMenu(self.menu_more)
+        self.btn_more.setVisible(False)
+
         for b in (self.btn_add_files, self.btn_add_folder, self.btn_add_url,
                   self.btn_new_device, self.btn_assign_device, self.btn_share,
                   self.btn_import_pkg, self.btn_help, self.btn_reset,
-                  self.btn_clear):
+                  self.btn_clear, self.btn_more):
+            b.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
             actions.addWidget(b)
         actions.addStretch()
         actions.addWidget(self.btn_index)
@@ -200,19 +327,18 @@ class SchematicSearchApp(QMainWindow):
 
         # --- Selección de aparato + estado ---
         dev_row = QHBoxLayout()
+        dev_row.setSpacing(6)
         dev_row.addWidget(QLabel(translations.tr('active_device')))
         self.cmb_devices = QComboBox()
-        self.cmb_devices.setMinimumWidth(280)
+        self.cmb_devices.setMinimumWidth(180)
+        self.cmb_devices.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLength)
         dev_row.addWidget(self.cmb_devices)
         self.btn_open_device = QPushButton(translations.tr('open_folder'))
         dev_row.addWidget(self.btn_open_device)
         dev_row.addStretch()
         self.chk_ocr = QCheckBox(translations.tr('ocr_scan'))
         self.chk_ocr.setChecked(True)
-        self.chk_ocr.setToolTip(
-            "Detecta los componentes aunque el PDF sea una foto/escaneo sin texto.\n"
-            "Déjalo activado. Desactívalo solo si tus PDF ya tienen texto y\n"
-            "quieres analizar mucho más rápido.")
+        self.chk_ocr.setToolTip(translations.tr('ocr_tooltip'))
         dev_row.addWidget(self.chk_ocr)
         self.lbl_files = QLabel(translations.tr('files_in_queue', n=0))
         dev_row.addWidget(self.lbl_files)
@@ -225,16 +351,18 @@ class SchematicSearchApp(QMainWindow):
 
         # --- Búsqueda ---
         search_row = QHBoxLayout()
+        search_row.setSpacing(6)
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText(translations.tr('search_placeholder'))
         self.btn_search = QPushButton(translations.tr('search'))
-        self.search_input.setMinimumHeight(34)
+        self.search_input.setMinimumHeight(32)
         search_row.addWidget(self.search_input, 1)
         search_row.addWidget(self.btn_search)
-        self.btn_back = QPushButton(translations.tr('back'))
+        self.btn_back = QPushButton("↩")
         self.btn_back.setToolTip(translations.tr('back_tooltip'))
         search_row.addWidget(self.btn_back)
-        search_row.addWidget(QLabel(translations.tr('on_select')))
+        self.lbl_on_select = QLabel(translations.tr('on_select'))
+        search_row.addWidget(self.lbl_on_select)
         self.cmb_auto = QComboBox()
         self.cmb_auto.addItems([translations.tr('multimeter'),
                                 translations.tr('interaction'),
@@ -247,10 +375,13 @@ class SchematicSearchApp(QMainWindow):
 
         self.lbl_hint = QLabel(translations.tr('hint'))
         self.lbl_hint.setStyleSheet("color:#8fa3bf; font-size:11px;")
+        self.lbl_hint.setWordWrap(True)
         root.addWidget(self.lbl_hint)
 
-        # --- Splitter ---
-        splitter = QSplitter(Qt.Horizontal)
+        # --- Splitter (se guarda para ajuste adaptativo) ---
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.splitter.setChildrenCollapsible(True)
+        self.splitter.setHandleWidth(6)
 
         # Izquierda: esquemáticos del aparato + resultados
         left = QWidget(); ll = QVBoxLayout(left); ll.setContentsMargins(0, 0, 0, 0)
@@ -258,7 +389,7 @@ class SchematicSearchApp(QMainWindow):
         self.files_box = QGroupBox(translations.tr('device_files'))
         fl = QVBoxLayout(self.files_box)
         self.lst_files = QListWidget()
-        self.lst_files.setMaximumHeight(104)
+        self.lst_files.setMaximumHeight(96)
         self.lst_files.setToolTip(translations.tr('device_files_tooltip'))
         self.lst_files.itemClicked.connect(self.on_file_clicked)
         self.lst_files.itemDoubleClicked.connect(self.open_file_in_viewer)
@@ -284,12 +415,16 @@ class SchematicSearchApp(QMainWindow):
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.table.setWordWrap(False)
         ll.addWidget(self.table, 1)
-        splitter.addWidget(left)
+        self.splitter.addWidget(left)
 
         # Derecha: pestañas
         right = QWidget(); rl = QVBoxLayout(right); rl.setContentsMargins(0, 0, 0, 0)
         self.tabs = QTabWidget()
+        self.tabs.setUsesScrollButtons(True)     # flechas si no caben las pestañas
+        self.tabs.setElideMode(Qt.ElideRight)
+        self.tabs.setDocumentMode(True)
         # Evita que rellenar la tabla abra sola la pestaña Multímetro.
         self._suppress_auto_tab = False
         self.pdf_viewer = PDFViewer()
@@ -311,11 +446,11 @@ class SchematicSearchApp(QMainWindow):
         self.tabs.addTab(self.divider_panel, translations.tr('tab_divider'))
         self.tabs.addTab(self.help_panel, translations.tr('tab_help'))
         rl.addWidget(self.tabs)
-        splitter.addWidget(right)
+        self.splitter.addWidget(right)
 
-        splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 4)
-        root.addWidget(splitter, 1)
+        self.splitter.setStretchFactor(0, 3)
+        self.splitter.setStretchFactor(1, 4)
+        root.addWidget(self.splitter, 1)
 
         # --- Status ---
         self.status_bar = QStatusBar()
@@ -331,6 +466,9 @@ class SchematicSearchApp(QMainWindow):
         self.btn_share.clicked.connect(self.share_schematics)
         self.btn_import_pkg.clicked.connect(self.import_package)
         self.btn_reset.clicked.connect(self.reset_all_data)
+        self.act_more_share.triggered.connect(self.share_schematics)
+        self.act_more_import.triggered.connect(self.import_package)
+        self.act_more_reset.triggered.connect(self.reset_all_data)
         self.btn_open_device.clicked.connect(self.open_device_folder)
         self.btn_clear.clicked.connect(self.clear_all)
         self.btn_help.clicked.connect(self.show_help)
@@ -351,6 +489,7 @@ class SchematicSearchApp(QMainWindow):
         self.inter_panel.divider_requested.connect(self.on_divider_requested)
         self.btn_back.clicked.connect(self.go_back)
         self.cmb_auto.currentTextChanged.connect(self.on_auto_tab_changed)
+
 
     # ---------------- Aparatos ----------------
     def reload_devices(self):
@@ -726,6 +865,9 @@ class SchematicSearchApp(QMainWindow):
             return
         from utils import reset as reset_mod
         errors = reset_mod.reset_user_data()
+        # Vuelve a crear las carpetas base por si el borrado las eliminó.
+        paths.ensure_user_dirs()
+        os.makedirs(SCHEMATICS_DIR, exist_ok=True)
         # Reinicia el estado en memoria
         self.paths = []
         self.current_device = ""
@@ -1014,12 +1156,16 @@ class SchematicSearchApp(QMainWindow):
         self.status_bar.showMessage(f"🔎 {des} resaltado en el esquemático")
 
     def show_image(self, filepath, des=""):
-        from PyQt5.QtGui import QPixmap
+        """Muestra una imagen en un diálogo que se adapta a la pantalla."""
         dlg = QMessageBox(self)
-        dlg.setWindowTitle(f"Imagen — {des}")
+        dlg.setWindowTitle(f"Imagen — {des}" if des else "Imagen")
         pix = QPixmap(filepath)
         if not pix.isNull():
-            dlg.setIconPixmap(pix.scaled(700, 500, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            geo = self._screen_geometry()
+            max_w = max(320, int(geo.width() * 0.7))
+            max_h = max(240, int(geo.height() * 0.7))
+            dlg.setIconPixmap(pix.scaled(max_w, max_h,
+                                         Qt.KeepAspectRatio, Qt.SmoothTransformation))
         dlg.setText(os.path.basename(filepath))
         dlg.exec_()
 
@@ -1027,16 +1173,30 @@ class SchematicSearchApp(QMainWindow):
         self._open_path(filepath)
 
     def _open_path(self, filepath):
+        """Abre un archivo/carpeta con la aplicación del sistema.
+
+        Usa QDesktopServices (la forma segura y multiplataforma) y, si falla,
+        recurre a un subproceso con lista de argumentos — nunca a un shell con
+        la ruta interpolada, que se rompería con espacios o sería inyectable.
+        """
+        try:
+            from PyQt5.QtCore import QUrl
+            from PyQt5.QtGui import QDesktopServices
+            if QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.abspath(filepath))):
+                return
+        except Exception:
+            pass
         try:
             if sys.platform.startswith('win'):
                 os.startfile(filepath)
             elif sys.platform.startswith('darwin'):
-                os.system(f'open "{filepath}"')
+                subprocess.Popen(['open', filepath])
             else:
-                os.system(f'xdg-open "{filepath}"')
+                subprocess.Popen(['xdg-open', filepath])
         except Exception as e:
             QMessageBox.warning(self, translations.tr('error'),
                                 translations.tr('open_failed', err=e))
+
 
     def _search_and_select(self, designator, push_history=False):
         """Busca un designador, rellena la tabla y selecciona su primera fila."""

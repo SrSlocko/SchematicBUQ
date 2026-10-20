@@ -27,22 +27,17 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Generate icon (if missing)
-        run: |
-          python -c "from PIL import Image; import os; os.makedirs('resources/icons', exist_ok=True); Image.new('RGBA',(256,256),(37,99,235,255)).save('resources/icons/app.ico')" 2>$null
-        continue-on-error: true
-
-      - name: Build executable
-        run: pyinstaller --noconfirm SchematicBuq.spec
+      - name: Build portable single-file executable
+        run: pyinstaller --noconfirm --distpath dist-win packaging/SchematicBuq-win.spec
 
       - name: Package
         run: |
-          Compress-Archive -Path dist/SchematicBuq.exe -DestinationPath SchematicBuq-Windows.zip
+          Copy-Item dist-win/SchematicBuq.exe SchematicBuq-Portable.exe
 
       - uses: actions/upload-artifact@v4
         with:
           name: SchematicBuq-Windows
-          path: SchematicBuq-Windows.zip
+          path: SchematicBuq-Portable.exe
 
   # ---------------------------------------------------------------- AppImage
   linux-appimage:
@@ -155,7 +150,7 @@ jobs:
 
             | Sistema | Archivo | Cómo usarlo |
             |---|---|---|
-            | **Windows** | `SchematicBuq-Windows.zip` | Descomprime y ejecuta `SchematicBuq.exe` |
+            | **Windows** | `SchematicBuq-Portable.exe` | Un solo archivo. Descárgalo, haz doble clic y listo (no instala nada). |
             | **Linux (universal)** | `SchematicBuq-*.AppImage` | `chmod +x` y ejecuta |
             | **Debian/Ubuntu** | `schematicbuq_*.deb` | `sudo apt install ./schematicbuq_*.deb` |
             | **Arch Linux** | `schematicbuq-*.pkg.tar.zst` | `sudo pacman -U schematicbuq-*.pkg.tar.zst` |

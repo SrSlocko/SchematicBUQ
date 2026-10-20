@@ -127,7 +127,10 @@ class MiniMap(QLabel):
         super().__init__(parent)
         self._thumb = None
         self._view = (0.0, 0.0, 1.0, 1.0)
-        self.setFixedWidth(170)
+        self.setMinimumWidth(100)
+        self.setMaximumWidth(190)
+        self.setMinimumHeight(110)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
         self.setStyleSheet(
             "QLabel{background:#0e1218;border:1px solid #2b3444;border-radius:6px;}")
@@ -205,6 +208,12 @@ class PDFViewer(QWidget):
         self._mini_timer.setInterval(60)
         self._mini_timer.timeout.connect(self._sync_minimap)
         self.init_ui()
+        self._user_wants_side = True
+        # Si arranca muy estrecho, oculta la columna lateral para dar espacio
+        # al esquemático (el usuario puede volver a mostrarla con 🗺️).
+        if self.width() and self.width() < 620:
+            self.side_widget.setVisible(False)
+            self.btn_side.setChecked(False)
         self.setFocusPolicy(Qt.StrongFocus)
 
     # ---------------- UI ----------------
@@ -215,36 +224,45 @@ class PDFViewer(QWidget):
 
         toolbar = QToolBar()
         toolbar.setMovable(False)
-        self.btn_prev = QPushButton("◀  Página")
+        self.btn_prev = QPushButton("◀")
         self.btn_prev.setToolTip("Página anterior (PageUp)")
-        self.btn_next = QPushButton("Página  ▶")
+        self.btn_next = QPushButton("▶")
         self.btn_next.setToolTip("Página siguiente (PageDown)")
         self.lbl_page = QLabel("0/0")
         self.btn_zoom_out = QPushButton("－")
         self.btn_zoom_out.setToolTip("Alejar (tecla -)")
         self.btn_zoom_in = QPushButton("＋")
         self.btn_zoom_in.setToolTip("Acercar (tecla +)")
-        self.btn_zoom_in.setFixedWidth(34)
-        self.btn_zoom_out.setFixedWidth(34)
+        self.btn_zoom_in.setMaximumWidth(40)
+        self.btn_zoom_out.setMaximumWidth(40)
         self.zoom_slider = QSlider(Qt.Horizontal)
         self.zoom_slider.setRange(int(MIN_ZOOM * 100), int(MAX_ZOOM * 100))
         self.zoom_slider.setValue(100)
-        self.zoom_slider.setFixedWidth(130)
+        self.zoom_slider.setMinimumWidth(70)
+        self.zoom_slider.setMaximumWidth(160)
+        self.zoom_slider.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.zoom_slider.setToolTip("Zoom")
         self.lbl_zoom = QLabel("100 %")
-        self.lbl_zoom.setFixedWidth(56)
+        self.lbl_zoom.setMinimumWidth(44)
         self.btn_fit = QPushButton("Ancho")
         self.btn_fit.setToolTip("Ajustar el esquemático al ancho (Ctrl+0)")
         self.btn_fit_page = QPushButton("Hoja entera")
         self.btn_fit_page.setToolTip("Ver la hoja completa")
-        self.btn_center = QPushButton("🎯  Ir al componente")
+        self.btn_center = QPushButton("🎯")
         self.btn_center.setToolTip("Centrar la vista en el componente buscado")
         self.lbl_shown = QLabel("")
         self.lbl_shown.setStyleSheet("color:#ffd166;font-weight:bold;")
+        self.lbl_shown.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
 
-        toolbar.addWidget(self.btn_prev)
-        toolbar.addWidget(self.btn_next)
-        toolbar.addWidget(self.lbl_page)
+        # Botón para ocultar/mostrar la columna lateral (mapa + componentes).
+        self.btn_side = QPushButton("🗺️")
+        self.btn_side.setCheckable(True)
+        self.btn_side.setChecked(True)
+        self.btn_side.setToolTip("Mostrar u ocultar el mapa y la lista de componentes")
+        self.btn_side.toggled.connect(self._toggle_side)
+
+        for w in (self.btn_prev, self.btn_next, self.lbl_page):
+            toolbar.addWidget(w)
         toolbar.addSeparator()
         toolbar.addWidget(self.btn_zoom_out)
         toolbar.addWidget(self.zoom_slider)
@@ -254,6 +272,7 @@ class PDFViewer(QWidget):
         toolbar.addWidget(self.btn_fit_page)
         toolbar.addSeparator()
         toolbar.addWidget(self.btn_center)
+        toolbar.addWidget(self.btn_side)
         toolbar.addWidget(self.lbl_shown)
         layout.addWidget(toolbar)
 
@@ -264,7 +283,9 @@ class PDFViewer(QWidget):
         self.scroll.setWidget(self.page_label)
         body.addWidget(self.scroll, 1)
 
-        side = QVBoxLayout()
+        # Columna lateral en un widget aparte para poder ocultarla entera.
+        self.side_widget = QWidget()
+        side = QVBoxLayout(self.side_widget)
         side.setContentsMargins(4, 4, 4, 4)
         t = QLabel("🗺️ Mapa")
         t.setStyleSheet("color:#8fa3bf;font-size:10px;")
@@ -280,7 +301,8 @@ class PDFViewer(QWidget):
         lbl_comp.setAlignment(Qt.AlignHCenter)
         side.addWidget(lbl_comp)
         self.lst_page_components = QListWidget()
-        self.lst_page_components.setFixedWidth(170)
+        self.lst_page_components.setMinimumWidth(120)
+        self.lst_page_components.setMaximumWidth(190)
         self.lst_page_components.setToolTip(
             "Componentes detectados en esta hoja.\n"
             "Pulsa uno para resaltarlo en el esquemático.")
@@ -291,7 +313,7 @@ class PDFViewer(QWidget):
         hint.setStyleSheet("color:#6d7f97;font-size:9px;")
         hint.setAlignment(Qt.AlignHCenter)
         side.addWidget(hint)
-        body.addLayout(side)
+        body.addWidget(self.side_widget)
         layout.addLayout(body, 1)
 
         self.btn_prev.clicked.connect(self.prev_page)
@@ -306,6 +328,23 @@ class PDFViewer(QWidget):
         self.minimap.jump.connect(self.jump_to_fraction)
         self.scroll.horizontalScrollBar().valueChanged.connect(self._schedule_minimap)
         self.scroll.verticalScrollBar().valueChanged.connect(self._schedule_minimap)
+
+    def _toggle_side(self, visible):
+        """Oculta/muestra la columna lateral del visor (útil en pantallas chicas)."""
+        self._user_wants_side = bool(visible)
+        self.side_widget.setVisible(visible)
+
+    def resizeEvent(self, event):
+        """En el visor estrecho, oculta la columna lateral automáticamente.
+
+        Si el usuario la mostró a propósito, se respeta su elección.
+        """
+        super().resizeEvent(event)
+        narrow = self.width() < 620
+        if narrow and not getattr(self, "_user_wants_side", True):
+            self.side_widget.setVisible(False)
+            self.btn_side.setChecked(False)
+
 
     # ---------------- Carga ----------------
     def load_pdf(self, path, highlight_words=None, highlight_rects=None, page=1):

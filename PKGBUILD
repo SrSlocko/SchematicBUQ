@@ -1,6 +1,6 @@
 # Maintainer: SrSlocko
 pkgname=schematicbuq
-pkgver=1.1.0
+pkgver=1.2.0
 pkgrel=1
 pkgdesc="Buscador inteligente de esquemáticos con visor integrado, indexado inteligente y soporte para OCR y multidióma"
 arch=('any')
@@ -33,14 +33,19 @@ package() {
     install -Dm644 schematicbuq.desktop \
         "$pkgdir/usr/share/applications/schematicbuq.desktop"
 
-    # Icono
+    # Icono (hicolor 256x256 es lo que usan los escritorios modernos; dejamos
+    # además pixmaps como respaldo para entornos antiguos)
     if [ -f resources/icons/app.png ]; then
+        install -Dm644 resources/icons/app.png \
+            "$pkgdir/usr/share/icons/hicolor/256x256/apps/schematicbuq.png"
         install -Dm644 resources/icons/app.png \
             "$pkgdir/usr/share/pixmaps/schematicbuq.png"
     elif [ -f resources/icons/app.ico ]; then
         install -Dm644 resources/icons/app.ico \
             "$pkgdir/usr/share/pixmaps/schematicbuq.ico"
         if command -v convert >/dev/null 2>&1; then
+            convert resources/icons/app.ico \
+                "$pkgdir/usr/share/icons/hicolor/256x256/apps/schematicbuq.png" 2>/dev/null || true
             convert resources/icons/app.ico \
                 "$pkgdir/usr/share/pixmaps/schematicbuq.png" 2>/dev/null || true
         fi
