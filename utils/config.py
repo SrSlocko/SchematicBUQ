@@ -4,12 +4,11 @@ import json
 import os
 import shutil
 from . import system_utils
+from . import paths
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# Permite aislar la configuración (pruebas, perfiles alternativos) sin tocar la
-# del usuario: basta con definir la variable de entorno SCHEMATICBUQ_CONFIG.
-CONFIG_FILE = (os.environ.get("SCHEMATICBUQ_CONFIG")
-               or os.path.join(BASE_DIR, "config.json"))
+BASE_DIR = paths.BASE_DIR
+# Configuración en el directorio del usuario (nunca en /usr/share).
+CONFIG_FILE = paths.CONFIG_FILE
 LOCAL_TESSDATA = os.path.join(BASE_DIR, "data", "tessdata")
 
 
@@ -67,10 +66,14 @@ class Config:
             try:
                 with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                if data.get('tesseract_path'):
-                    self.tesseract_path = data['tesseract_path']
-                if data.get('poppler_path'):
-                    self.poppler_path = data['poppler_path']
+                # Se ignoran rutas guardadas de otro sistema operativo
+                # (p. ej. C:\Program Files\... en un equipo Linux).
+                tp = data.get('tesseract_path')
+                if tp and not paths.is_windows_path(tp) and os.path.exists(tp):
+                    self.tesseract_path = tp
+                pp = data.get('poppler_path')
+                if pp and not paths.is_windows_path(pp) and os.path.isdir(pp):
+                    self.poppler_path = pp
                 if data.get('last_device'):
                     self.last_device = data['last_device']
                 if data.get('auto_tab'):
@@ -86,6 +89,7 @@ class Config:
             'auto_tab': self.auto_tab,
         }
         try:
+            os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2)
         except Exception as e:

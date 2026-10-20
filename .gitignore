@@ -1,0 +1,30 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Datos generados por el usuario (no deben viajar en el repo)
+config.json
+data/parse_cache.json
+data/downloads/
+data/esquematicos/
+database/devices.json
+logs/
+*.log
+index.json
+
+# Entornos y empaquetado
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+pkg/
+src/
+*.pkg.tar.zst
+*.pkg.tar.xz
+*.sbq
+
+# Sistema
+.DS_Store
+Thumbs.db

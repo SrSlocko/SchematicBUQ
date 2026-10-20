@@ -4,13 +4,35 @@ import json
 import os
 from typing import Dict, List, Any, Optional
 
+from utils import paths, migration
+
+
 class DeviceDB:
-    def __init__(self, db_path="database/devices.json"):
-        self.db_path = db_path
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    def __init__(self, db_path=None):
+        self.db_path = db_path or paths.DEVICES_FILE
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self.devices = {}
         self.load()
-    
+        self._migrate_once()
+
+    def _migrate_once(self):
+        """Una sola vez: descarta aparatos con rutas de Windows o carpetas que
+        ya no existen, para que una instalación nueva arranque vacía."""
+        if migration.marker_exists("devices_cleaned"):
+            return
+        clean = {}
+        for k, d in self.devices.items():
+            folder = d.get("folder") or ""
+            if paths.is_windows_path(folder):
+                continue
+            if folder and not os.path.isdir(folder):
+                continue
+            clean[k] = d
+        if len(clean) != len(self.devices):
+            self.devices = clean
+            self.save()
+        migration.mark_done("devices_cleaned")
+
     def load(self):
         if os.path.exists(self.db_path):
             try:
@@ -21,6 +43,7 @@ class DeviceDB:
     
     def save(self):
         try:
+            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
             with open(self.db_path, 'w', encoding='utf-8') as f:
                 json.dump(self.devices, f, indent=2, ensure_ascii=False)
         except Exception as e:

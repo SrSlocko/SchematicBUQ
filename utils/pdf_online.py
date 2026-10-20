@@ -5,9 +5,12 @@ import os
 from urllib.parse import urlparse
 from typing import Optional
 
+from . import paths
+
 class PDFOnlineFetcher:
     @staticmethod
-    def fetch_pdf(url: str, save_dir: str = "data/downloads") -> Optional[str]:
+    def fetch_pdf(url: str, save_dir: str = None) -> Optional[str]:
+        save_dir = save_dir or paths.SCHEMATICS_DIR
         try:
             os.makedirs(save_dir, exist_ok=True)
             response = requests.get(url, stream=True, timeout=60, headers={

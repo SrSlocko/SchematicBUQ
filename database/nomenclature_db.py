@@ -4,9 +4,12 @@ import json
 import os
 from typing import Dict, Any
 
+from utils import paths
+
+
 class NomenclatureDB:
-    def __init__(self, db_path="data/nomenclature_es.json"):
-        self.db_path = db_path
+    def __init__(self, db_path=None):
+        self.db_path = db_path or paths.NOMENCLATURE_FILE
         self.data = {}
         self.load()
     

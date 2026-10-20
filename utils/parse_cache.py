@@ -11,8 +11,10 @@ import json
 import os
 import tempfile
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_PATH = os.path.join(BASE_DIR, "data", "parse_cache.json")
+from . import paths
+
+BASE_DIR = paths.BASE_DIR
+DEFAULT_PATH = paths.PARSE_CACHE_FILE
 
 # Sube esta versión cuando cambie el modo de calcular rects/designadores/valores
 # para forzar reindexado (por ejemplo, tras corregir la rotación de páginas).

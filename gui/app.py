@@ -28,12 +28,15 @@ from gui.widgets.diagnostic_panel import DiagnosticPanel
 from gui.widgets.multimeter_panel import MultimeterPanel
 from gui.widgets.interaction_panel import InteractionPanel
 from gui.widgets.help_panel import HelpPanel
+from utils import translations
+from utils.schematic_store import SchematicStore
+from utils import paths
 
 import qdarkstyle
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ICON_PATH = os.path.join(BASE_DIR, "resources", "icons", "app.ico")
-SCHEMATICS_DIR = os.path.join(BASE_DIR, "data", "esquematicos")
+BASE_DIR = paths.BASE_DIR
+ICON_PATH = paths.ICON_FILE
+SCHEMATICS_DIR = paths.SCHEMATICS_DIR
 
 
 def _norm_path(p):
@@ -75,8 +78,14 @@ class IndexerThread(QThread):
 class SchematicSearchApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SchematicBuq — Buscador Inteligente de Esquemáticos")
+        translations.set_language()
+        self.setWindowTitle(translations.tr('app_title'))
         self.setGeometry(50, 40, 1440, 860)
+        # Make responsive - adapt to screen size
+        from PyQt5.QtWidgets import QDesktopWidget
+        screen = QDesktopWidget().screenGeometry()
+        if screen.width() < 1600 or screen.height() < 900:
+            self.setGeometry(20, 20, min(1200, screen.width()-40), min(700, screen.height()-80))
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QIcon(ICON_PATH))
 
@@ -84,6 +93,7 @@ class SchematicSearchApp(QMainWindow):
         self.config = Config()
         self.device_db = DeviceDB()
         self.parse_cache = ParseCache()
+        self.store = SchematicStore()
         self.paths = []
         self.current_device = ""
         self._indexing = False
@@ -92,6 +102,7 @@ class SchematicSearchApp(QMainWindow):
         self._restart_index = False
         self._nav_history = []         # componentes visitados (para «Volver»)
 
+        paths.ensure_user_dirs()
         os.makedirs(SCHEMATICS_DIR, exist_ok=True)
         self.setStyleSheet(self._stylesheet())
         self.init_ui()
@@ -101,10 +112,9 @@ class SchematicSearchApp(QMainWindow):
     def _show_system_status(self):
         ocr = self.config.ocr_available()
         if ocr:
-            msg = f"Sistema listo — OCR activo ({self.config.ocr_langs}) — Tesseract: {self.config.tesseract_path}"
+            msg = translations.tr('system_ready_ocr', langs=self.config.ocr_langs, path=self.config.tesseract_path)
         else:
-            msg = ("Sistema listo — OCR NO disponible (instala Tesseract para escaneos). "
-                   "Los PDF con texto funcionan igual.")
+            msg = translations.tr('system_ready_noocr')
         self.status_bar.showMessage(msg)
 
     # ---------------- Estilo ----------------
@@ -146,7 +156,7 @@ class SchematicSearchApp(QMainWindow):
         title = QLabel("SchematicBuq")
         tf = QFont(); tf.setPointSize(17); tf.setBold(True)
         title.setFont(tf)
-        subtitle = QLabel("  Busca componentes, entiende su función y sigue las conexiones")
+        subtitle = QLabel(translations.tr('subtitle'))
         subtitle.setStyleSheet("color:#8fa3bf; font-size:12px;")
         header.addWidget(logo)
         header.addWidget(title)
@@ -156,26 +166,30 @@ class SchematicSearchApp(QMainWindow):
 
         # --- Barra de acciones ---
         actions = QHBoxLayout()
-        self.btn_add_files = QPushButton("📁  Añadir archivos")
+        self.btn_add_files = QPushButton(translations.tr('add_files'))
         self.btn_add_files.setToolTip("Añade uno o varios esquemáticos (PDF, imagen, netlist)")
-        self.btn_add_folder = QPushButton("📂  Añadir carpeta")
+        self.btn_add_folder = QPushButton(translations.tr('add_folder'))
         self.btn_add_folder.setToolTip("Añade todos los esquemáticos de una carpeta")
-        self.btn_add_url = QPushButton("🌐  Importar PDF (URL)")
+        self.btn_add_url = QPushButton(translations.tr('add_url'))
         self.btn_add_url.setToolTip("Descarga un PDF desde un enlace de internet")
-        self.btn_new_device = QPushButton("➕  Nuevo aparato")
+        self.btn_new_device = QPushButton(translations.tr('new_device'))
         self.btn_new_device.setToolTip("Crea un aparato y guarda sus esquemáticos en su carpeta")
-        self.btn_assign_device = QPushButton("📦  Guardar en el aparato")
+        self.btn_assign_device = QPushButton(translations.tr('assign_device'))
         self.btn_assign_device.setToolTip("Guarda los archivos en la carpeta del aparato activo")
-        self.btn_help = QPushButton("❓  Ayuda")
+        self.btn_help = QPushButton(translations.tr('help'))
         self.btn_help.setToolTip("Guía paso a paso y diccionario para principiantes")
-        self.btn_clear = QPushButton("🗑️  Limpiar")
+        self.btn_clear = QPushButton(translations.tr('clear'))
         self.btn_clear.setToolTip("Vacía la lista de archivos, los resultados y el visor")
-        self.btn_index = QPushButton("⚙️  Analizar")
-        self.btn_index.setToolTip("Lee los esquemáticos y guarda todos sus componentes.\n"
-                                  "La primera vez tarda un poco; después es instantáneo.")
+        self.btn_index = QPushButton(translations.tr('analyze'))
+        self.btn_index.setToolTip(translations.tr('analyze_tooltip'))
         self.btn_index.setStyleSheet("background-color:#2563eb;color:white;")
+        self.btn_share = QPushButton(translations.tr('share'))
+        self.btn_share.setToolTip(translations.tr('share_tooltip'))
+        self.btn_import_pkg = QPushButton(translations.tr('import_pkg'))
+        self.btn_import_pkg.setToolTip(translations.tr('import_pkg_tooltip'))
         for b in (self.btn_add_files, self.btn_add_folder, self.btn_add_url,
-                  self.btn_new_device, self.btn_assign_device, self.btn_help,
+                  self.btn_new_device, self.btn_assign_device, self.btn_share,
+                  self.btn_import_pkg, self.btn_help,
                   self.btn_clear):
             actions.addWidget(b)
         actions.addStretch()
@@ -184,21 +198,21 @@ class SchematicSearchApp(QMainWindow):
 
         # --- Selección de aparato + estado ---
         dev_row = QHBoxLayout()
-        dev_row.addWidget(QLabel("Aparato/equipo activo:"))
+        dev_row.addWidget(QLabel(translations.tr('active_device')))
         self.cmb_devices = QComboBox()
         self.cmb_devices.setMinimumWidth(280)
         dev_row.addWidget(self.cmb_devices)
-        self.btn_open_device = QPushButton("Abrir carpeta")
+        self.btn_open_device = QPushButton(translations.tr('open_folder'))
         dev_row.addWidget(self.btn_open_device)
         dev_row.addStretch()
-        self.chk_ocr = QCheckBox("Leer esquemáticos escaneados (más lento)")
+        self.chk_ocr = QCheckBox(translations.tr('ocr_scan'))
         self.chk_ocr.setChecked(True)
         self.chk_ocr.setToolTip(
             "Detecta los componentes aunque el PDF sea una foto/escaneo sin texto.\n"
             "Déjalo activado. Desactívalo solo si tus PDF ya tienen texto y\n"
             "quieres analizar mucho más rápido.")
         dev_row.addWidget(self.chk_ocr)
-        self.lbl_files = QLabel("0 archivo(s) en cola")
+        self.lbl_files = QLabel(translations.tr('files_in_queue', n=0))
         dev_row.addWidget(self.lbl_files)
         root.addLayout(dev_row)
 
@@ -210,29 +224,26 @@ class SchematicSearchApp(QMainWindow):
         # --- Búsqueda ---
         search_row = QHBoxLayout()
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText(
-            "Busca un componente:  R46 · C12 · U5 · Q3 · D1  ·  o un valor: 10k · 100uF · 4.7k")
-        self.btn_search = QPushButton("🔎  Buscar")
+        self.search_input.setPlaceholderText(translations.tr('search_placeholder'))
+        self.btn_search = QPushButton(translations.tr('search'))
         self.search_input.setMinimumHeight(34)
         search_row.addWidget(self.search_input, 1)
         search_row.addWidget(self.btn_search)
-        self.btn_back = QPushButton("◀  Volver")
-        self.btn_back.setToolTip(
-            "Vuelve al componente que estabas viendo antes (navegar por el circuito)")
+        self.btn_back = QPushButton(translations.tr('back'))
+        self.btn_back.setToolTip(translations.tr('back_tooltip'))
         search_row.addWidget(self.btn_back)
-        search_row.addWidget(QLabel("Al seleccionar:"))
+        search_row.addWidget(QLabel(translations.tr('on_select')))
         self.cmb_auto = QComboBox()
-        self.cmb_auto.addItems(["Multímetro", "Interacción", "Diagnóstico", "No cambiar"])
-        self.cmb_auto.setToolTip(
-            "Qué pestaña se abre automáticamente al hacer clic en un resultado")
-        self.cmb_auto.setCurrentText(self.config.auto_tab or "Multímetro")
+        self.cmb_auto.addItems([translations.tr('multimeter'),
+                                translations.tr('interaction'),
+                                translations.tr('diagnostic'),
+                                translations.tr('no_change')])
+        self.cmb_auto.setToolTip(translations.tr('auto_tab_tooltip'))
+        self.cmb_auto.setCurrentText(self.config.auto_tab or translations.tr('multimeter'))
         search_row.addWidget(self.cmb_auto)
         root.addLayout(search_row)
 
-        self.lbl_hint = QLabel(
-            "💡 Escribe el componente y pulsa Buscar · clic en un resultado para "
-            "ver cómo medirlo · «🔄 Interacción» muestra con quién se relaciona · "
-            "doble clic para verlo en el esquemático.")
+        self.lbl_hint = QLabel(translations.tr('hint'))
         self.lbl_hint.setStyleSheet("color:#8fa3bf; font-size:11px;")
         root.addWidget(self.lbl_hint)
 
@@ -242,14 +253,11 @@ class SchematicSearchApp(QMainWindow):
         # Izquierda: esquemáticos del aparato + resultados
         left = QWidget(); ll = QVBoxLayout(left); ll.setContentsMargins(0, 0, 0, 0)
 
-        self.files_box = QGroupBox("📄 Esquemáticos del aparato")
+        self.files_box = QGroupBox(translations.tr('device_files'))
         fl = QVBoxLayout(self.files_box)
         self.lst_files = QListWidget()
         self.lst_files.setMaximumHeight(104)
-        self.lst_files.setToolTip(
-            "Archivos del aparato seleccionado.\n"
-            "Clic: muestra todos sus componentes.\n"
-            "Doble clic: abre el esquemático en el visor.")
+        self.lst_files.setToolTip(translations.tr('device_files_tooltip'))
         self.lst_files.itemClicked.connect(self.on_file_clicked)
         self.lst_files.itemDoubleClicked.connect(self.open_file_in_viewer)
         fl.addWidget(self.lst_files)
@@ -258,8 +266,11 @@ class SchematicSearchApp(QMainWindow):
 
         self.table = QTableWidget()
         self.table.setColumnCount(7)
-        self.table.setHorizontalHeaderLabels(
-            ["Designador", "Valor", "Tipo", "Archivo", "Pág.", "Origen", "Aparato"])
+        self.table.setHorizontalHeaderLabels([
+            translations.tr('col_designator'), translations.tr('col_value'),
+            translations.tr('col_type'), translations.tr('col_file'),
+            translations.tr('col_page'), translations.tr('col_source'),
+            translations.tr('col_device')])
         hh = self.table.horizontalHeader()
         hh.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         hh.setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -288,15 +299,15 @@ class SchematicSearchApp(QMainWindow):
         self.multi_panel = MultimeterPanel()
         self.inter_panel = InteractionPanel()
         self.help_panel = HelpPanel()
-        self.tabs.addTab(self.pdf_viewer, "🧭  Visor del esquemático")
-        self.tabs.addTab(self.component_view, "🧩  Componente")
-        self.tabs.addTab(self.inter_panel, "🔄  Interacción y comportamiento")
-        self.tabs.addTab(self.multi_panel, "🔌  Multímetro")
-        self.tabs.addTab(self.diag_panel, "🔬  Diagnóstico y pruebas")
-        self.tabs.addTab(self.conn_panel, "🔗  Conexiones del componente")
-        self.tabs.addTab(self.nomen_panel, "📚  Nomenclatura y diagnóstico")
-        self.tabs.addTab(self.divider_panel, "🧮  Divisor de tensión")
-        self.tabs.addTab(self.help_panel, "🆘  Cómo usar (ayuda)")
+        self.tabs.addTab(self.pdf_viewer, translations.tr('tab_viewer'))
+        self.tabs.addTab(self.component_view, translations.tr('tab_component'))
+        self.tabs.addTab(self.inter_panel, translations.tr('tab_interaction'))
+        self.tabs.addTab(self.multi_panel, translations.tr('tab_multimeter'))
+        self.tabs.addTab(self.diag_panel, translations.tr('tab_diagnostic'))
+        self.tabs.addTab(self.conn_panel, translations.tr('tab_connections'))
+        self.tabs.addTab(self.nomen_panel, translations.tr('tab_nomenclature'))
+        self.tabs.addTab(self.divider_panel, translations.tr('tab_divider'))
+        self.tabs.addTab(self.help_panel, translations.tr('tab_help'))
         rl.addWidget(self.tabs)
         splitter.addWidget(right)
 
@@ -307,7 +318,7 @@ class SchematicSearchApp(QMainWindow):
         # --- Status ---
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("Listo. Añade un esquemático para empezar.")
+        self.status_bar.showMessage(translations.tr('status_ready'))
 
         # --- Conexiones de señales ---
         self.btn_add_files.clicked.connect(self.add_files)
@@ -315,6 +326,8 @@ class SchematicSearchApp(QMainWindow):
         self.btn_add_url.clicked.connect(self.add_from_url)
         self.btn_new_device.clicked.connect(self.new_device)
         self.btn_assign_device.clicked.connect(self.assign_device_folder)
+        self.btn_share.clicked.connect(self.share_schematics)
+        self.btn_import_pkg.clicked.connect(self.import_package)
         self.btn_open_device.clicked.connect(self.open_device_folder)
         self.btn_clear.clicked.connect(self.clear_all)
         self.btn_help.clicked.connect(self.show_help)
@@ -340,7 +353,7 @@ class SchematicSearchApp(QMainWindow):
     def reload_devices(self):
         self.cmb_devices.blockSignals(True)
         self.cmb_devices.clear()
-        self.cmb_devices.addItem("(Ninguno)")
+        self.cmb_devices.addItem(translations.tr('none'))
         names = []
         for d in self.device_db.get_devices():
             self.cmb_devices.addItem(d['name'])
@@ -368,8 +381,7 @@ class SchematicSearchApp(QMainWindow):
             self.current_device = ""
             self.config.last_device = ""
             self.config.save()
-            self._reset_workspace(
-                "Aparato: (ninguno) — cola vacía. Añade archivos o elige un aparato.")
+            self._reset_workspace(translations.tr('no_device_selected'))
             return
 
         self.current_device = self.cmb_devices.currentText()
@@ -517,8 +529,8 @@ class SchematicSearchApp(QMainWindow):
 
     def new_device(self):
         name, ok = QInputDialog.getText(
-            self, "Nuevo aparato",
-            "Nombre del aparato o equipo\n(ej.: Fuente ATX 500W, TV Samsung, Amplificador Yamaha):")
+            self, translations.tr('new_device'),
+            translations.tr('device_name_prompt'))
         if not (ok and name.strip()):
             return
         name = name.strip()
@@ -529,9 +541,8 @@ class SchematicSearchApp(QMainWindow):
         self.config.save()
         self.reload_devices()
         QMessageBox.information(
-            self, "Aparato creado",
-            f"Se creó el aparato '{name}'.\n\nCarpeta de esquemáticos:\n{folder}\n\n"
-            "Los esquemáticos que guardes se organizarán aquí.")
+            self, translations.tr('device_created'),
+            translations.tr('device_created_msg', name=name, folder=folder))
 
     @staticmethod
     def _safe_name(name):
@@ -542,7 +553,8 @@ class SchematicSearchApp(QMainWindow):
 
     def open_device_folder(self):
         if not self.current_device:
-            QMessageBox.information(self, "Sin aparato", "Selecciona primero un aparato.")
+            QMessageBox.information(self, translations.tr('no_device'),
+                                    translations.tr('select_device_first'))
             return
         dev = self.device_db.find_device(self.current_device)
         if not dev:
@@ -550,15 +562,15 @@ class SchematicSearchApp(QMainWindow):
         folder = dev['folder']
         os.makedirs(folder, exist_ok=True)
         try:
-            os.startfile(folder)
+            self._open_path(folder)
         except Exception as e:
-            QMessageBox.warning(self, "Error", str(e))
+            QMessageBox.warning(self, translations.tr('error'), str(e))
 
     def assign_device_folder(self):
         """Copia los archivos en cola a la carpeta del aparato activo."""
         if not self.current_device:
-            QMessageBox.information(self, "Sin aparato",
-                                    "Crea o selecciona un aparato primero.")
+            QMessageBox.information(self, translations.tr('no_device'),
+                                    translations.tr('create_device_first'))
             return
         dev = self.device_db.find_device(self.current_device)
         if not dev:
@@ -578,14 +590,70 @@ class SchematicSearchApp(QMainWindow):
                     print("Error copiando", p, e)
         self.update_paths_label()
         QMessageBox.information(
-            self, "Guardado",
-            f"{len(moved)} archivo(s) guardados en:\n{folder}\n\n"
-            "Reindexa para incluir los archivos con el nombre del aparato.")
+            self, translations.tr('saved'),
+            translations.tr('saved_msg', n=len(moved), folder=folder))
+
+    # ---------------- Compartir / base de datos local ----------------
+    def _store_current_files(self):
+        """Copia los esquemáticos en cola al almacén local (por aparato)."""
+        device = self.current_device or "General"
+        for p in list(self.paths):
+            if os.path.isfile(p):
+                try:
+                    self.store.save_file(p, device)
+                except Exception:
+                    pass
+
+    def share_schematics(self):
+        """Exporta un paquete .sbq seguro (solo esquemáticos, sin ejecutables)."""
+        self._store_current_files()
+        device = self.current_device or None
+        default = os.path.join(
+            os.path.expanduser("~"),
+            f"schematicbuq_{device or 'todos'}.sbq")
+        dest, _ = QFileDialog.getSaveFileName(
+            self, translations.tr('share'), default,
+            "Paquete SchematicBuq (*.sbq)")
+        if not dest:
+            return
+        if not dest.lower().endswith(".sbq"):
+            dest += ".sbq"
+        try:
+            self.store.export_package(dest, device=device, index=self.index)
+        except Exception as e:
+            QMessageBox.warning(self, translations.tr('error'), str(e))
+            return
+        QMessageBox.information(
+            self, translations.tr('share'),
+            translations.tr('share_done', path=dest))
+
+    def import_package(self):
+        """Importa un paquete .sbq validando que solo traiga esquemáticos."""
+        src, _ = QFileDialog.getOpenFileName(
+            self, translations.tr('import_pkg'), "",
+            "Paquete SchematicBuq (*.sbq *.zip)")
+        if not src:
+            return
+        try:
+            imported, skipped = self.store.import_package(src)
+        except Exception as e:
+            QMessageBox.warning(self, translations.tr('error'),
+                                translations.tr('import_failed', err=e))
+            return
+        # Añade los esquemáticos importados a la cola e índice
+        for p in imported:
+            if p not in self.paths:
+                self.paths.append(p)
+        self.update_paths_label()
+        msg = translations.tr('import_done', n=len(imported))
+        if skipped:
+            msg += "\n\n" + translations.tr('import_skipped', n=len(skipped))
+        QMessageBox.information(self, translations.tr('import_pkg'), msg)
 
     # ---------------- Archivos ----------------
     def add_files(self):
         files, _ = QFileDialog.getOpenFileNames(
-            self, "Seleccionar esquemáticos", "",
+            self, translations.tr('select_schematics'), "",
             "Soportados (*.pdf *.png *.jpg *.jpeg *.bmp *.tif *.tiff *.net *.cir *.txt *.sp "
             "*.kicad_sch *.kicad_sym *.sch *.json *.schdoc *.pcbdoc);;"
             "PDF (*.pdf);;Imágenes (*.png *.jpg *.jpeg *.bmp);;"
@@ -597,7 +665,7 @@ class SchematicSearchApp(QMainWindow):
         self.update_paths_label()
 
     def add_folder(self):
-        folder = QFileDialog.getExistingDirectory(self, "Seleccionar carpeta con esquemáticos")
+        folder = QFileDialog.getExistingDirectory(self, translations.tr('select_folder'))
         if not folder:
             return
         if folder not in self.paths:
@@ -609,16 +677,16 @@ class SchematicSearchApp(QMainWindow):
             self.config.last_device = name
             self.config.save()
             self.reload_devices()
-            self.status_bar.showMessage(f"Aparato '{name}' registrado desde la carpeta")
+            self.status_bar.showMessage(translations.tr('device_registered', name=name))
         self.update_paths_label()
 
     def add_from_url(self):
         url, ok = QInputDialog.getText(
-            self, "Importar PDF desde URL",
-            "Pega la URL directa del PDF del esquemático:")
+            self, translations.tr('import_url'),
+            translations.tr('import_url_prompt'))
         if not (ok and url.strip()):
             return
-        self.status_bar.showMessage("Descargando PDF...")
+        self.status_bar.showMessage(translations.tr('downloading_pdf'))
         from utils.pdf_online import PDFOnlineFetcher
         dest_dir = SCHEMATICS_DIR
         if self.current_device:
@@ -928,6 +996,9 @@ class SchematicSearchApp(QMainWindow):
         dlg.exec_()
 
     def open_external(self, filepath):
+        self._open_path(filepath)
+
+    def _open_path(self, filepath):
         try:
             if sys.platform.startswith('win'):
                 os.startfile(filepath)
@@ -936,7 +1007,8 @@ class SchematicSearchApp(QMainWindow):
             else:
                 os.system(f'xdg-open "{filepath}"')
         except Exception as e:
-            QMessageBox.warning(self, "Error", f"No se pudo abrir: {e}")
+            QMessageBox.warning(self, translations.tr('error'),
+                                translations.tr('open_failed', err=e))
 
     def _search_and_select(self, designator, push_history=False):
         """Busca un designador, rellena la tabla y selecciona su primera fila."""

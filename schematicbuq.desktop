@@ -1,9 +1,13 @@
 [Desktop Entry]
+Type=Application
 Name=SchematicBuq
-Comment=Buscador inteligente de esquemáticos
+GenericName=Schematic Search
+Comment=Smart schematic search with built-in viewer, indexing and OCR
+Comment[es]=Buscador inteligente de esquemáticos con visor, indexado y OCR
+Comment[ru]=Умный поиск схем со встроенным просмотрщиком, индексацией и OCR
 Exec=schematicbuq
 Icon=schematicbuq
 Terminal=false
-Type=Application
-Categories=Electronics;Utility;Engineering;
+Categories=Electronics;Engineering;Utility;Science;
+Keywords=schematic;electronics;repair;ocr;esquematico;схема;
 StartupWMClass=SchematicBuq

@@ -16,16 +16,17 @@ from datetime import datetime
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
 from gui.app import SchematicSearchApp
+from utils import translations, paths
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_DIR = os.path.join(BASE_DIR, "logs")
+BASE_DIR = paths.BASE_DIR
+LOG_DIR = paths.LOG_DIR
 LOG_FILE = os.path.join(LOG_DIR, "error.log")
 
 _last_error = {"key": None}
 
 
 def _write_log(text: str) -> str:
-    """Guarda el error en logs/error.log (o en la carpeta temporal si falla)."""
+    """Guarda el error en ~/.local/share/schematicbuq/logs/error.log."""
     candidates = [LOG_FILE, os.path.join(
         os.environ.get("TEMP", LOG_DIR), "schematicbuq_error.log")]
     for path in candidates:
@@ -72,6 +73,7 @@ def _install_excepthook():
 
 
 def main():
+    translations.set_language()
     _install_excepthook()
     app = QApplication(sys.argv)
     app.setApplicationName("SchematicBuq")

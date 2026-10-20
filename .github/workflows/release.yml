@@ -1,0 +1,164 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ---------------------------------------------------------------- Windows
+  windows-exe:
+    name: Windows (.exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Generate icon (if missing)
+        run: |
+          python -c "from PIL import Image; import os; os.makedirs('resources/icons', exist_ok=True); Image.new('RGBA',(256,256),(37,99,235,255)).save('resources/icons/app.ico')" 2>$null
+        continue-on-error: true
+
+      - name: Build executable
+        run: pyinstaller --noconfirm SchematicBuq.spec
+
+      - name: Package
+        run: |
+          Compress-Archive -Path dist/SchematicBuq.exe -DestinationPath SchematicBuq-Windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SchematicBuq-Windows
+          path: SchematicBuq-Windows.zip
+
+  # ---------------------------------------------------------------- AppImage
+  linux-appimage:
+    name: Linux (AppImage)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-pyqt5 libgl1 libegl1 libxkbcommon-x11-0 \
+            libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-render-util0 libxcb-xinerama0 libxcb-cursor0 \
+            tesseract-ocr tesseract-ocr-spa tesseract-ocr-eng poppler-utils \
+            libfuse2 file wget
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build executable
+        run: pyinstaller --noconfirm SchematicBuq.spec
+
+      - name: Build AppImage
+        run: |
+          chmod +x packaging/build_appimage.sh
+          ./packaging/build_appimage.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SchematicBuq-AppImage
+          path: "*.AppImage"
+
+  # ---------------------------------------------------------------- .deb
+  linux-deb:
+    name: Linux (.deb)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: ver
+        run: |
+          V=$(grep -m1 '^pkgver=' PKGBUILD | cut -d= -f2 | tr -d "'\" ")
+          echo "version=${V:-1.0.0}" >> "$GITHUB_OUTPUT"
+
+      - name: Build .deb
+        run: |
+          chmod +x packaging/build_deb.sh
+          ./packaging/build_deb.sh "${{ steps.ver.outputs.version }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SchematicBuq-deb
+          path: "*.deb"
+
+  # ---------------------------------------------------------------- Arch
+  arch-pkg:
+    name: Arch Linux (pkg.tar.zst)
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install base tools
+        run: pacman -Syu --noconfirm base-devel git sudo
+
+      - uses: actions/checkout@v4
+
+      - name: Build package
+        run: |
+          useradd -m builder
+          chown -R builder:builder .
+          sudo -u builder makepkg -f --noconfirm --nodeps
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SchematicBuq-arch
+          path: "*.pkg.tar.zst"
+
+  # ---------------------------------------------------------------- Release
+  release:
+    name: Publish release
+    needs: [windows-exe, linux-appimage, linux-deb, arch-pkg]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: artifacts
+
+      - name: Show artifacts
+        run: ls -la artifacts
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          body: |
+            ## SchematicBuq ${{ github.ref_name }}
+
+            Elige el paquete según tu sistema:
+
+            | Sistema | Archivo | Cómo usarlo |
+            |---|---|---|
+            | **Windows** | `SchematicBuq-Windows.zip` | Descomprime y ejecuta `SchematicBuq.exe` |
+            | **Linux (universal)** | `SchematicBuq-*.AppImage` | `chmod +x` y ejecuta |
+            | **Debian/Ubuntu** | `schematicbuq_*.deb` | `sudo apt install ./schematicbuq_*.deb` |
+            | **Arch Linux** | `schematicbuq-*.pkg.tar.zst` | `sudo pacman -U schematicbuq-*.pkg.tar.zst` |
+
+            Dependencias del sistema (Linux): `tesseract`, `poppler`.
+            En Arch: `sudo pacman -S schematicbuq` (repo `custom`).

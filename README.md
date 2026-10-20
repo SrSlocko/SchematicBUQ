@@ -8,6 +8,10 @@ hace, sigue sus conexiones y recibe recomendaciones prácticas.
 
 ## ✨ ¿Qué hace?
 
+- **Multilingüe automático** 🇪🇸🇬🇧🇷🇺: la interfaz aparece en **español, inglés o ruso** según
+  el idioma del sistema (se puede forzar con la variable `SCHEMATICBUQ_LANG`).
+- **Adaptativo a cualquier pantalla**: la ventana se ajusta sola al tamaño del monitor y
+  funciona en equipos de bajos recursos (detecta poca RAM/CPU y reduce el trabajo del OCR).
 - **Busca cualquier componente** por su designador: `R46`, `C12`, `U5`, `Q3`, `D1`, `F1`…
   También por valor: `10k`, `100uF`, `4.7k`, `1N4007`.
 - **Te dice el valor** aunque el esquemático sea un PDF escaneado, una foto o un netlist.
@@ -16,13 +20,30 @@ hace, sigue sus conexiones y recibe recomendaciones prácticas.
 - **Te explica la función** de cada tipo, sus síntomas típicos y cómo diagnosticarlo.
 - **Visor integrado del esquemático** que abre el PDF en la página exacta y **resalta en rojo**
   dónde está el componente que buscaste.
+- **Comparte esquemáticos de forma segura** 📤📥: exporta e importa paquetes `.sbq` que
+  **solo contienen esquemáticos** (nunca ejecutables ni scripts), para intercambiar
+  esquemáticos con otros usuarios como una base de datos local libre.
 - **Sigue la línea del esquemático**: si cargas un netlist, muestra a qué nodos pertenece el
   componente y qué otros componentes están conectados (con un clic saltas a ellos).
-- **Organiza tus esquemáticos** en una carpeta con el nombre del aparato (p. ej. `Ampeg B2R`,
-  `Fuente ATX 500W`) para búsquedas más rápidas.
+- **Organiza tus esquemáticos** por aparato (p. ej. `Ampeg B2R`, `Fuente ATX 500W`) en una
+  carpeta local del usuario, para búsquedas más rápidas.
 - **Importa PDF desde una URL** directamente.
 - **Recomendaciones reales de reparación**, p. ej.: si se quema un fusible, no basta cambiarlo —
   hay que encontrar la causa aguas abajo.
+
+## 📁 ¿Dónde guarda los datos?
+
+Todos los datos que el programa crea (configuración, caché, aparatos, esquemáticos, registros)
+se guardan **en tu carpeta de usuario**, nunca dentro del programa instalado:
+
+| Sistema | Carpeta |
+|---|---|
+| Linux | `~/.local/share/schematicbuq/` |
+| Windows | `%LOCALAPPDATA%\schematicbuq\` |
+| Config | `~/.config/schematicbuq/config.json` |
+
+Así puedes actualizar o reinstalar el programa sin perder tus esquemáticos, y una instalación
+nueva **siempre arranca vacía**.
 
 ## 🗂️ Formatos soportados
 
@@ -39,19 +60,47 @@ hace, sigue sus conexiones y recibe recomendaciones prácticas.
 
 ## 🚀 Instalación
 
-### 1) Dependencias de Python
+### Opción A — Descarga un ejecutable (recomendado)
+Ve a **[Releases](https://github.com/SrSlocko/SchematicBUQ/releases)** y elige:
+
+| Sistema | Archivo | Cómo usarlo |
+|---|---|---|
+| **Windows** | `SchematicBuq-Windows.zip` | Descomprime y ejecuta `SchematicBuq.exe` |
+| **Linux (universal)** | `SchematicBuq-*.AppImage` | `chmod +x SchematicBuq-*.AppImage && ./SchematicBuq-*.AppImage` |
+| **Debian / Ubuntu / Mint** | `schematicbuq_*.deb` | `sudo apt install ./schematicbuq_*.deb` |
+| **Arch Linux / Manjaro** | `schematicbuq-*.pkg.tar.zst` | `sudo pacman -U schematicbuq-*.pkg.tar.zst` |
+
+### Opción B — Arch Linux (repositorio pacman)
 ```bash
-pip install -r requirements.txt
+sudo pacman -S schematicbuq
 ```
 
-### 2) OCR (para escaneos e imágenes)
+### Opción C — Desde el código fuente
+```bash
+git clone https://github.com/SrSlocko/SchematicBUQ
+cd SchematicBUQ
+pip install -r requirements.txt
+python main.py
+```
+
+### OCR (para escaneos e imágenes)
 Instala **Tesseract** y el programa lo detecta solo:
 - Windows: `winget install UB-Mannheim.TesseractOCR`
-- Linux: `sudo apt install tesseract-ocr`
-- macOS: `brew install tesseract`
+- Debian/Ubuntu: `sudo apt install tesseract-ocr tesseract-ocr-spa poppler-utils`
+- Arch: `sudo pacman -S tesseract tesseract-data-spa poppler`
 
-> Los idiomas `spa` y `eng` ya se incluyen en `data/tessdata` (186 MB aprox. no, son ~6 MB).
-> Si instalas Tesseract en otra ruta, edita `config.json` (se crea al primer arranque).
+> Los idiomas `spa` y `eng` ya se incluyen en `data/tessdata` (~6 MB). Si instalas Tesseract en
+> otra ruta, edita `~/.config/schematicbuq/config.json` (se crea al primer arranque).
+
+## 🌐 Idiomas
+
+La interfaz se traduce automáticamente según el idioma del sistema (**español, inglés, ruso**).
+Para forzar un idioma:
+
+```bash
+SCHEMATICBUQ_LANG=en schematicbuq
+SCHEMATICBUQ_LANG=ru schematicbuq
+```
 
 ## ▶️ Uso
 
