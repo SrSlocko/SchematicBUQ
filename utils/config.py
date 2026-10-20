@@ -16,13 +16,49 @@ class Config:
     def __init__(self):
         self.tesseract_path = self._autodetect_tesseract()
         self.poppler_path = self._autodetect_poppler()
-        self.ocr_langs = 'spa+eng' if os.path.exists(
-            os.path.join(LOCAL_TESSDATA, 'spa.traineddata')) else 'eng'
+        self.ocr_langs = self._autodetect_langs()
         self.last_device = ""      # último aparato usado (para autoselección)
         self.auto_tab = "Multímetro"   # pestaña que se abre al seleccionar
         self.low_resource_mode = system_utils.SYSTEM_INFO.get('low_resource_mode', False)
         self.max_workers = system_utils.SYSTEM_INFO.get('max_workers', 1)
         self.load()
+
+    def _autodetect_langs(self):
+        """Idiomas OCR disponibles: usa spa+eng si existen, si no eng, si no ''.
+
+        Busca primero en la carpeta local del paquete (`data/tessdata`) y, si no,
+        en las rutas habituales del Tesseract del sistema (Linux/Windows/macOS).
+        """
+        candidates = [LOCAL_TESSDATA]
+        tp = self.tesseract_path
+        if tp:
+            # tessdata suele estar junto al binario o en ../share/tessdata
+            bindir = os.path.dirname(tp)
+            candidates += [
+                os.path.join(bindir, "tessdata"),
+                os.path.join(bindir, "..", "share", "tessdata"),
+                os.path.join(bindir, "..", "share", "tesseract-ocr", "tessdata"),
+                "/usr/share/tessdata",
+                "/usr/share/tesseract-ocr/5/tessdata",
+                "/usr/share/tesseract-ocr/4.00/tessdata",
+                "/usr/local/share/tessdata",
+            ]
+        have = set()
+        for d in candidates:
+            try:
+                if not os.path.isdir(d):
+                    continue
+                for f in os.listdir(d):
+                    if f.endswith(".traineddata"):
+                        have.add(f[:-len(".traineddata")])
+            except Exception:
+                continue
+        langs = []
+        if "spa" in have:
+            langs.append("spa")
+        if "eng" in have:
+            langs.append("eng")
+        return "+".join(langs) if langs else "eng"
 
     def apply_tessdata(self):
         """Apunta Tesseract a la carpeta local de idiomas si existe (spa+eng)."""
