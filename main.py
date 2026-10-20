@@ -77,7 +77,7 @@ def main():
     _install_excepthook()
     app = QApplication(sys.argv)
     app.setApplicationName("SchematicBuq")
-    app.setApplicationVersion("2.0")
+    app.setApplicationVersion("1.1.0")
     app.setOrganizationName("SchematicBuq")
     window = SchematicSearchApp()
     window.show()
