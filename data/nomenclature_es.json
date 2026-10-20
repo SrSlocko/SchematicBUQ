@@ -1,0 +1,198 @@
+{
+  "designators": {
+    "R": {
+      "name": "Resistencia",
+      "description": "Limita el flujo de corriente eléctrica. Convierte energía eléctrica en calor.",
+      "unit": "Ω (Ohmios)",
+      "common_values": ["10Ω", "100Ω", "1k", "4.7k", "10k", "47k", "100k", "1M"],
+      "what_it_does": "Controla intensidad, divide tensión, limita corriente, polariza transistores.",
+      "troubleshooting": "Si está abierta: lectura infinita con multímetro. Si en corto: 0Ω. Frecuentemente falla quemada o agrietada. Al quemarse un fusible, revisa resistencias asociadas.",
+      "symptoms": ["Sin alimentación", "Sobrecalentamiento", "Tensión incorrecta"]
+    },
+    "C": {
+      "name": "Condensador/Capacitor",
+      "description": "Almacena energía eléctrica en forma de campo eléctrico. Filtra, desacopla, acopla señales.",
+      "unit": "F (Faradios): pF, nF, μF",
+      "common_values": ["100pF", "1nF", "10nF", "100nF", "0.1μF", "1μF", "10μF", "47μF", "100μF", "470μF", "1000μF"],
+      "what_it_does": "Filtrado de ruido, desacoplo de alimentación, acoplamiento AC, temporización, arranque motores.",
+      "troubleshooting": "Electrolíticos secos: hinchados, con fuga, abultados. Medir ESR. Pueden perder capacidad con el tiempo. Muy común en fuentes conmutadas.",
+      "symptoms": ["Ruido en audio", "Parpadeo", "Fallo en arranque", "Ondulación excesiva"]
+    },
+    "L": {
+      "name": "Inductor/Bobina",
+      "description": "Almacena energía en campo magnético. Se opone a cambios de corriente.",
+      "unit": "H (Henrios): μH, mH",
+      "what_it_does": "Filtrado de fuente (chokes), transformadores de alta frecuencia, osciladores, supresión EMI.",
+      "troubleshooting": "Revisar continuidad. Puede abrirse (rotura de hilo) o cortocircuitarse (aislamiento). Suele oler quemado o verse carbonizado.",
+      "symptoms": ["Sin salida", "Sobrecalentamiento", "Ruido"]
+    },
+    "D": {
+      "name": "Diodo",
+      "description": "Permite paso de corriente en un sentido (polarizado directo), bloquea en inverso.",
+      "what_it_does": "Rectificación, protección inversa, libre circulación (flyback), detección.",
+      "troubleshooting": "Test con diodo: debe conducir en un sentido, abrir en otro. Si conduce ambos sentidos o abre ambos: defectuoso.",
+      "symptoms": ["Sin rectificación", "Poca tensión", "Picos dañinos"]
+    },
+    "ZD": {
+      "name": "Diodo Zener",
+      "description": "Conduce en inverso cuando supera tensión Zener. Regula tensión.",
+      "what_it_does": "Regulación de tensión, protección de sobrevoltaje.",
+      "troubleshooting": "Fallo en corto común. Verificar tensión de ruptura.",
+      "symptoms": ["Sobretensión", "Componente quemado aguas abajo"]
+    },
+    "Q": {
+      "name": "Transistor (BJT/FET)",
+      "description": "Dispositivo semiconductor que amplifica o conmuta señales/corriente.",
+      "what_it_does": "Amplificación, conmutación, oscilación, control de potencia.",
+      "troubleshooting": "Comprobar hFE, fugas entre terminales (CE, BE, GS). Frecuente por sobretensión/sobrecorriente.",
+      "symptoms": ["Sin conmutación", "Distorsión", "Sobrecalentamiento", "Cortocircuito"]
+    },
+    "U": {
+      "name": "Circuito Integrado (IC)",
+      "description": "Conjunto de componentes miniaturizados en un chip. Función específica según tipo.",
+      "what_it_does": "Amplificadores, reguladores, microcontroladores, drivers, comparadores, lógica.",
+      "troubleshooting": "Difícil sin esquema. Revisar tensiones de alimentación, pines dañados, sobrecalentamiento. Suele ir acompañado de otros fallos.",
+      "symptoms": ["Fallo funcional completo", "Bloqueo", "Sin salida", "Caliente"]
+    },
+    "IC": {
+      "name": "Circuito Integrado (IC)",
+      "description": "Idéntico a U. Usado indistintamente.",
+      "what_it_does": "Igual que U.",
+      "troubleshooting": "Igual que U."
+    },
+    "J": {
+      "name": "Conector",
+      "description": "Punto de unión entre circuitos/cables.",
+      "what_it_does": "Interconexión, alimentación, señales.",
+      "troubleshooting": "Revisar soldaduras frías, contactos oxidados, pines doblados, falso contacto.",
+      "symptoms": ["Intermitente", "Sin contacto", "Calentamiento en borne"]
+    },
+    "P": {
+      "name": "Conector/Terminal",
+      "description": "Conector o bornera.",
+      "what_it_does": "Interconexión externa/interna."
+    },
+    "K": {
+      "name": "Relé",
+      "description": "Interruptor electromagnético. Controla alta potencia con señal baja.",
+      "what_it_does": "Conmutación de carga, aislamiento galvánico, protección.",
+      "troubleshooting": "Bobina: medir resistencia. Contactos: revisar soldaduras/oxidación. Puede pegarse.",
+      "symptoms": ["No conmuta", "Chasquido débil", "Contactos quemados"]
+    },
+    "S": {
+      "name": "Interruptor",
+      "description": "Abre/cierra circuito manualmente.",
+      "what_it_does": "Encendido/apagado, selección."
+    },
+    "SW": {
+      "name": "Interruptor",
+      "description": "Interruptor (general)."
+    },
+    "F": {
+      "name": "Fusible",
+      "description": "Protección contra sobrecorriente. Se funde para cortar circuito.",
+      "what_it_does": "Protección. ¡NUNCA lo puentes con alambre sin diagnosticar causa!",
+      "troubleshooting": "Si está abierto: revisar causa (corto aguas abajo, condensador en corto, diodo, transistor). Cambiar solo tras reparar.",
+      "symptoms": ["Sin alimentación", "Quemado", "Rotura visible"]
+    },
+    "Y": {
+      "name": "Cristal/Oscilador",
+      "description": "Genera frecuencia precisa por resonancia piezoeléctrica.",
+      "what_it_does": "Reloj para microcontroladores, osciladores, relojes digitales.",
+      "troubleshooting": "Puede romperse. Comprobar con osciloscopio si oscila.",
+      "symptoms": ["Sin reloj", "Reinicio", "No arranca"]
+    },
+    "T": {
+      "name": "Transformador",
+      "description": "Transfiere energía AC por inducción. Cambia relación tensión/corriente.",
+      "what_it_does": "Reducción/elevación, aislamiento galvánico.",
+      "troubleshooting": "Medir continuidad devanados. Buscar cortocircuito entre bobinas o a carcasa. Olor quemado.",
+      "symptoms": ["Sin tensión secundaria", "Caliente", "Zumbido"]
+    },
+    "TP": {
+      "name": "Punto de Prueba (Test Point)",
+      "description": "Punto accesible para medir tensión/señal durante reparación.",
+      "what_it_does": "Diagnóstico."
+    },
+    "VR": {
+      "name": "Potenciómetro/Varistor",
+      "description": "VR: resistencia variable. Varistor: protección contra transitorios.",
+      "what_it_does": "Ajuste (volumen, brillo) / Supresión picos (MOV)."
+    },
+    "TH": {
+      "name": "Termistor",
+      "description": "Resistencia dependiente de temperatura (NTC/PTC).",
+      "what_it_does": "Limitador de arranque (NTC), protección térmica.",
+      "troubleshooting": "Medir resistencia a temperatura ambiente.",
+      "symptoms": ["No arranca en frío", "Sobrecalentamiento"]
+    },
+    "RN": {
+      "name": "Red de resistencias (Resistor Network)",
+      "description": "Varias resistencias empaquetadas en un solo componente (SIP/DIP).",
+      "what_it_does": "Pull-ups/pull-downs, divisores repetidos, terminación de bus.",
+      "troubleshooting": "Medir cada par de pines por separado. Un valor abierto basta para fallar.",
+      "symptoms": ["Líneas de bus inestables", "Lecturas erróneas"]
+    },
+    "RP": {
+      "name": "Red de resistencias / Potenciómetro múltiple",
+      "description": "Conjunto de resistencias o resistencias variables.",
+      "what_it_does": "Terminación, ajuste múltiple.",
+      "troubleshooting": "Comprobar cada elemento por separado.",
+      "symptoms": ["Ajuste sin efecto", "Valores fijos"]
+    },
+    "BR": {
+      "name": "Puente rectificador",
+      "description": "4 diodos en puente que convierten AC en DC.",
+      "what_it_does": "Rectificación de la red en fuentes de alimentación.",
+      "troubleshooting": "Medir con multímetro en modo diodo entre ~ y + / -. Si conduce en ambos sentidos: defectuoso (causa típica de fusible quemado).",
+      "symptoms": ["Sin continua", "Fusible quemado", "Zumbido", "Tensión baja"]
+    },
+    "LED": {
+      "name": "Diodo LED",
+      "description": "Diodo que emite luz.",
+      "what_it_does": "Indicación de encendido/estado.",
+      "troubleshooting": "Comprobar polaridad y resistencia limitadora en serie.",
+      "symptoms": ["No ilumina", "Luz débil"]
+    },
+    "H": {
+      "name": "Soporte / Agujero de montaje",
+      "description": "Elemento mecánico (heat-sink, espaciador, ojales).",
+      "what_it_does": "Fijación y disipación mecánica.",
+      "troubleshooting": "Revisar tornillos, aislamientos y contacto térmico.",
+      "symptoms": ["Sobrecalentamiento", "Vibración"]
+    },
+    "SP": {
+      "name": "Altavoz",
+      "description": "Transductor electroacústico.",
+      "what_it_does": "Reproducción de sonido.",
+      "troubleshooting": "Medir impedancia (4/8/16Ω). Revisar bobina abierta o rozamiento.",
+      "symptoms": ["Sin sonido", "Distorsión", "Crujido"]
+    },
+    "M": {
+      "name": "Motor",
+      "description": "Convertidor electromecánico.",
+      "what_it_does": "Accionamiento mecánico.",
+      "troubleshooting": "Medir devanados y escobillas. Revisar arranque y consumo.",
+      "symptoms": ["No gira", "Zumbido", "Sobrecalentamiento"]
+    },
+    "X": {
+      "name": "Cristal/Oscilador",
+      "description": "Resonador de cuarzo u oscilador.",
+      "what_it_does": "Reloj/base de tiempo.",
+      "troubleshooting": "Comprobar que oscila (osciloscopio). Revisar condensadores de carga.",
+      "symptoms": ["No arranca", "Reinicios"]
+    }
+  },
+  "tips": [
+    "Si se quema un FUSIBLE (F): NO lo cambies sin buscar la causa. Revisa diodos, transistores, condensadores electrolíticos aguas abajo.",
+    "Condensadores electrolíticos hinchados o con fuga = muy probable fallo.",
+    "Cuando busques R46, fíjate también en resistencias adyacentes y pistas.",
+    "En fuentes conmutadas, primero revisa fusible, puente rectificador, condensadores primarios.",
+    "Para diagnóstico sistemático: inspección visual → continuidad → tensiones → componentes sospechosos."
+  ],
+  "quick_troubleshooting": {
+    "no_alimenta": ["Revisar fusible", "Puente rectificador (BR/D)", "Condensador filtro", "Cableado"],
+    "intermitente": ["Conectores (J/P)", "Soldaduras frías", "Condensadores electrolíticos"],
+    "caliente": ["Transistores (Q)", "Reguladores (U)", "Bobinas/Transformador", "Resistencias"]
+  }
+}
