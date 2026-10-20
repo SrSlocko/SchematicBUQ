@@ -14,7 +14,16 @@ block_cipher = None
 hidden = []
 for pkg in ("cv2", "fitz", "pymupdf", "pdfminer", "PIL", "pytesseract",
             "pyqtgraph", "qdarkstyle"):
-    hidden += collect_submodules(pkg)
+    try:
+        hidden += collect_submodules(pkg)
+    except Exception as exc:  # pragma: no cover - entorno de empaquetado
+        print(f"Aviso: no se pudieron recopilar submódulos de {pkg}: {exc}")
+
+# Submódulos que requieren pantalla o son de ejemplo: nunca se empaquetan.
+excluded = [
+    "pyqtgraph.examples", "pyqtgraph.opengl", "pyqtgraph.console",
+    "tkinter", "matplotlib", "PyQt5.QtWebEngineWidgets",
+]
 
 datas = [
     ("resources", "resources"),
@@ -30,7 +39,7 @@ a = Analysis(
     hiddenimports=hidden,
     hookspath=[],
     runtime_hooks=[],
-    excludes=["tkinter", "matplotlib.tests", "numpy.tests"],
+    excludes=excluded,
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

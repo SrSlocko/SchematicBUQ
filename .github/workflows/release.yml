@@ -63,7 +63,7 @@ jobs:
             libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
             libxcb-render-util0 libxcb-xinerama0 libxcb-cursor0 \
             tesseract-ocr tesseract-ocr-spa tesseract-ocr-eng poppler-utils \
-            libfuse2 file wget
+            libfuse2 file wget xvfb
 
       - name: Install Python dependencies
         run: |
@@ -72,7 +72,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build executable
-        run: pyinstaller --noconfirm SchematicBuq.spec
+        run: xvfb-run -a pyinstaller --noconfirm SchematicBuq.spec
 
       - name: Build AppImage
         run: |
