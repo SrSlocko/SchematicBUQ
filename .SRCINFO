@@ -1,0 +1,26 @@
+pkgbase = schematicbuq
+	pkgdesc = Buscador inteligente de esquemáticos con visor integrado, indexado inteligente y soporte para OCR
+	pkgver = 1.0.0
+	pkgrel = 1
+	url = https://github.com/SrSlocko/SchematicBUQ
+	install = schematicbuq.install
+	arch = any
+	license = MIT
+	depends = python-pyqt5
+	depends = python-pymupdf
+	depends = python-pytesseract
+	depends = python-pillow
+	depends = python-opencv
+	depends = python-qdarkstyle
+	depends = python-pdfminer
+	depends = python-pyqtgraph
+	depends = tesseract
+	depends = tesseract-data-spa
+	depends = tesseract-data-eng
+	depends = poppler
+	optdepends = python-colorama
+	optdepends = python-requests
+	source = schematicbuq-1.0.0.tar.gz::https://github.com/SrSlocko/SchematicBUQ/archive/refs/heads/main.tar.gz
+	sha256sums = SKIP
+
+pkgname = schematicbuq

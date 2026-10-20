@@ -6,8 +6,8 @@ pkgdesc="Buscador inteligente de esquemáticos con visor integrado, indexado int
 arch=('any')
 url="https://github.com/SrSlocko/SchematicBUQ"
 license=('MIT')
-depends=('python-pyqt5' 'python-pymupdf' 'python-pytesseract' 'python-pillow' 'python-opencv' 'tesseract' 'tesseract-data-spa' 'tesseract-data-eng' 'poppler')
-optdepends=('python-qdarkstyle' 'python-pdfminer.six' 'python-requests' 'python-pyqtgraph')
+depends=('python-pyqt5' 'python-pymupdf' 'python-pytesseract' 'python-pillow' 'python-opencv' 'python-qdarkstyle' 'python-pdfminer' 'python-pyqtgraph' 'tesseract' 'tesseract-data-spa' 'tesseract-data-eng' 'poppler')
+optdepends=('python-colorama' 'python-requests')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/heads/main.tar.gz")
 sha256sums=('SKIP')
 
