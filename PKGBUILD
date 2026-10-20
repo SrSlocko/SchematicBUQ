@@ -1,7 +1,7 @@
 # Maintainer: SrSlocko
 pkgname=schematicbuq
 pkgver=1.0.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Buscador inteligente de esquemáticos con visor integrado, indexado inteligente y soporte para OCR"
 arch=('any')
 url="https://github.com/SrSlocko/SchematicBUQ"
@@ -24,17 +24,13 @@ package() {
     # Desktop entry
     install -Dm644 "$srcdir/SchematicBUQ-main/schematicbuq.desktop" "$pkgdir/usr/share/applications/schematicbuq.desktop"
     
-    # Icon (try to use app.ico if exists, else create symlink)
+    # Icon
     if [ -f "$srcdir/SchematicBUQ-main/resources/icons/app.ico" ]; then
         install -Dm644 "$srcdir/SchematicBUQ-main/resources/icons/app.ico" "$pkgdir/usr/share/pixmaps/schematicbuq.ico"
-        # Try to install PNG if exists
         if [ -f "$srcdir/SchematicBUQ-main/resources/icons/app.png" ]; then
             install -Dm644 "$srcdir/SchematicBUQ-main/resources/icons/app.png" "$pkgdir/usr/share/pixmaps/schematicbuq.png"
-        else
-            # Create PNG from ICO using convert if available
-            if command -v convert >/dev/null 2>&1; then
-                convert "$srcdir/SchematicBUQ-main/resources/icons/app.ico" "$pkgdir/usr/share/pixmaps/schematicbuq.png" 2>/dev/null || true
-            fi
+        elif command -v convert >/dev/null 2>&1; then
+            convert "$srcdir/SchematicBUQ-main/resources/icons/app.ico" "$pkgdir/usr/share/pixmaps/schematicbuq.png" 2>/dev/null || true
         fi
     fi
 }

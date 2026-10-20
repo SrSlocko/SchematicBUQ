@@ -1,7 +1,7 @@
 pkgbase = schematicbuq
 	pkgdesc = Buscador inteligente de esquemáticos con visor integrado, indexado inteligente y soporte para OCR
 	pkgver = 1.0.0
-	pkgrel = 1
+	pkgrel = 2
 	url = https://github.com/SrSlocko/SchematicBUQ
 	install = schematicbuq.install
 	arch = any
