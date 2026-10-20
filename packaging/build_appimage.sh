@@ -41,6 +41,12 @@ fi
 cp schematicbuq.desktop "$APPDIR/schematicbuq.desktop"
 cp schematicbuq.desktop "$APPDIR/usr/share/applications/schematicbuq.desktop"
 
+# Icono también en la raíz del AppDir (lo exige appimagetool)
+if [ -f "$APPDIR/usr/share/icons/hicolor/256x256/apps/schematicbuq.png" ]; then
+  cp "$APPDIR/usr/share/icons/hicolor/256x256/apps/schematicbuq.png" "$APPDIR/schematicbuq.png"
+  cp "$APPDIR/schematicbuq.png" "$APPDIR/.DirIcon"
+fi
+
 # AppRun: arranca el ejecutable
 cat > "$APPDIR/AppRun" <<'EOF'
 #!/bin/bash
