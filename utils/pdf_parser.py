@@ -13,12 +13,13 @@ from .value_match import match_values, words_from_page
 from .ocr import (ocr_words, OCR_ZOOM, MAX_ZOOM, TARGET_WIDTH_TILED,
                   expand_designators, tile_image, tile_has_content,
                   TILE_COLS, TILE_ROWS, TILE_PSMS, TILE_OVERLAP)
+from . import system_utils
 
 
 class PDFParser:
     # El OCR es el paso lento: repartimos las páginas escaneadas entre varios
     # hilos (cada llamada a Tesseract es un subproceso independiente).
-    MAX_OCR_WORKERS = 2
+    MAX_OCR_WORKERS = system_utils.SYSTEM_INFO.get('max_workers', 1)
 
     def __init__(self, use_ocr=True):
         from .config import Config
@@ -105,6 +106,9 @@ class PDFParser:
                 pw = max(1.0, page.rect.width)
 
                 zoom = max(OCR_ZOOM, min(MAX_ZOOM, TARGET_WIDTH_TILED / pw))
+                # Reducir zoom en modo bajo recursos
+                if system_utils.SYSTEM_INFO.get('low_resource_mode'):
+                    zoom = max(OCR_ZOOM, min(MAX_ZOOM * 0.7, TARGET_WIDTH_TILED / pw * 0.7))
                 pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom))
                 img = Image.open(io.BytesIO(pix.tobytes("png")))
 

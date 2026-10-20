@@ -93,3 +93,15 @@ class ParseCache:
     def invalidate(self, filepath):
         if self.data.pop(self._key(filepath), None) is not None:
             self.dirty = True
+
+
+def clear_cache_if_large(max_mb=100):
+    """Limpia caché si pesa mucho (para PCs bajos recursos)."""
+    try:
+        path = DEFAULT_PATH
+        if os.path.exists(path):
+            size_mb = os.path.getsize(path) / (1024 * 1024)
+            if size_mb > max_mb:
+                os.remove(path)
+    except Exception:
+        pass

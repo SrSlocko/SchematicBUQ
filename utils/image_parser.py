@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
+import gc
 from typing import List
 
 try:
@@ -19,6 +20,7 @@ from .value_match import match_values
 from .ocr import (ocr_words, expand_designators, tile_image, tile_has_content,
                   TILE_COLS, TILE_ROWS, TILE_OVERLAP, TILE_PSMS)
 from .config import Config
+from . import system_utils
 
 
 class ImageParser:
@@ -66,13 +68,18 @@ class ImageParser:
         W, H = img.size
         if W * H < 2_500_000:          # imagen pequeña: una sola pasada
             return ocr_words(pytesseract, img, lang=self.lang)
+        # En modo bajo recursos usar menos tiles
+        cols = 2 if system_utils.SYSTEM_INFO.get('low_resource_mode') else TILE_COLS
+        rows = 2 if system_utils.SYSTEM_INFO.get('low_resource_mode') else TILE_ROWS
         out = []
-        for part, dx, dy in tile_image(img, TILE_COLS, TILE_ROWS,
+        for part, dx, dy in tile_image(img, cols, rows,
                                        overlap=TILE_OVERLAP):
             if not tile_has_content(part):
                 continue
             out.extend(ocr_words(pytesseract, part, lang=self.lang,
                                  psms=TILE_PSMS, offset=(dx, dy)))
+            del part
+        gc.collect()
         return out
 
     def parse(self, filepath: str, index=None) -> List[ComponentResult]:

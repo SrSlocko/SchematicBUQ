@@ -3,6 +3,7 @@
 import json
 import os
 import shutil
+from . import system_utils
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Permite aislar la configuración (pruebas, perfiles alternativos) sin tocar la
@@ -20,6 +21,8 @@ class Config:
             os.path.join(LOCAL_TESSDATA, 'spa.traineddata')) else 'eng'
         self.last_device = ""      # último aparato usado (para autoselección)
         self.auto_tab = "Multímetro"   # pestaña que se abre al seleccionar
+        self.low_resource_mode = system_utils.SYSTEM_INFO.get('low_resource_mode', False)
+        self.max_workers = system_utils.SYSTEM_INFO.get('max_workers', 1)
         self.load()
 
     def apply_tessdata(self):
@@ -90,3 +93,10 @@ class Config:
 
     def ocr_available(self):
         return bool(self.tesseract_path and os.path.exists(self.tesseract_path))
+    def get_ocr_config(self):
+        return {
+            'tesseract_path': self.tesseract_path,
+            'langs': self.ocr_langs,
+            'low_resource': self.low_resource_mode,
+            'max_workers': self.max_workers
+        }

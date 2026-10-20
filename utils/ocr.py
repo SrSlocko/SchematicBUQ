@@ -171,3 +171,22 @@ def count_designators(words):
     """Cuenta designadores válidos (útil para decidir si repetir a mayor zoom)."""
     return len({(w['text'] or '').strip().upper()
                 for w in words if is_designator(w['text'])})
+
+
+# Función para optimizar zoom según recursos
+def get_optimal_zoom():
+    """Devuelve zoom óptimo según recursos del sistema."""
+    try:
+        from . import system_utils
+        if system_utils.SYSTEM_INFO.get('low_resource_mode'):
+            return OCR_ZOOM
+        return TARGET_WIDTH_TILED / 2000.0  # Calcular basado en ancho objetivo
+    except Exception:
+        return OCR_ZOOM
+
+
+def estimate_ocr_time(pages, low_resource=False):
+    """Estima tiempo de OCR en segundos."""
+    if low_resource:
+        return pages * 15  # ~15s por página en modo bajo recursos
+    return pages * 8   # ~8s por página normal
