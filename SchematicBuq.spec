@@ -12,12 +12,16 @@ from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 block_cipher = None
 
 hidden = []
-for pkg in ("cv2", "fitz", "pymupdf", "pdfminer", "PIL", "pytesseract",
-            "pyqtgraph", "qdarkstyle"):
+# Colección dirigida: evitamos `collect_submodules` en paquetes que arrastran
+# submódulos pesados o problemáticos (p. ej. PyMuPDF -> onnxruntime/pymupdf4llm).
+for pkg in ("cv2", "pdfminer", "PIL", "pytesseract", "pyqtgraph", "qdarkstyle"):
     try:
         hidden += collect_submodules(pkg)
     except Exception as exc:  # pragma: no cover - entorno de empaquetado
         print(f"Aviso: no se pudieron recopilar submódulos de {pkg}: {exc}")
+
+# PyMuPDF: solo el paquete principal y su alias `fitz`
+hidden += ["fitz", "pymupdf"]
 
 # Submódulos que requieren pantalla, son de ejemplo o rompen el empaquetado.
 excluded = [
