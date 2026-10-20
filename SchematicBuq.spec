@@ -19,10 +19,16 @@ for pkg in ("cv2", "fitz", "pymupdf", "pdfminer", "PIL", "pytesseract",
     except Exception as exc:  # pragma: no cover - entorno de empaquetado
         print(f"Aviso: no se pudieron recopilar submódulos de {pkg}: {exc}")
 
-# Submódulos que requieren pantalla o son de ejemplo: nunca se empaquetan.
+# Submódulos que requieren pantalla, son de ejemplo o rompen el empaquetado.
 excluded = [
     "pyqtgraph.examples", "pyqtgraph.opengl", "pyqtgraph.console",
-    "tkinter", "matplotlib", "PyQt5.QtWebEngineWidgets",
+    "pyqtgraph.flowchart", "pyqtgraph.jupyter",
+    "tkinter", "matplotlib",
+    "PyQt5.QtWebEngineWidgets", "PyQt5.QtQuick", "PyQt5.QtQml",
+    # PyMuPDF moderno arrastra onnxruntime/pymupdf4llm que no usamos y que
+    # hacen caer el subproceso aislado de PyInstaller.
+    "onnxruntime", "pymupdf.layout", "pymupdf4llm",
+    "qdarkstyle.example", "qdarkstyle.utils",
 ]
 
 datas = [

@@ -33,7 +33,8 @@ jobs:
         continue-on-error: true
 
       - name: Build executable
-        run: pyinstaller --noconfirm SchematicBuq.spec
+        run: |
+          pyinstaller --noconfirm --exclude-module onnxruntime --exclude-module pymupdf4llm --exclude-module pymupdf.layout --exclude-module pyqtgraph.opengl --exclude-module pyqtgraph.examples SchematicBuq.spec
 
       - name: Package
         run: |
@@ -72,7 +73,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build executable
-        run: xvfb-run -a pyinstaller --noconfirm SchematicBuq.spec
+        run: xvfb-run -a pyinstaller --noconfirm --exclude-module onnxruntime --exclude-module pymupdf4llm --exclude-module pymupdf.layout --exclude-module pyqtgraph.opengl --exclude-module pyqtgraph.examples SchematicBuq.spec
 
       - name: Build AppImage
         run: |

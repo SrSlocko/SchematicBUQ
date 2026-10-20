@@ -1,5 +1,5 @@
 PyQt5>=5.15.9
-PyMuPDF>=1.23.26
+PyMuPDF>=1.23.26,<1.26
 pdfminer.six>=20221105
 pytesseract>=0.3.10
 opencv-python>=4.8.0
